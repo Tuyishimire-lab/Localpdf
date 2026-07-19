@@ -22,6 +22,9 @@ export const metadata = {
   title: "LocalPDF | Free and Secure Client-Side PDF Tools",
   description: "Merge, split, compress, convert, rotate, watermark, page-number, protect and unlock PDFs 100% locally in your browser. Complete privacy, zero server uploads.",
   keywords: "PDF tools, merge PDF, split PDF, compress PDF, PDF to JPG, JPG to PDF, rotate PDF, watermark PDF, protect PDF, client-side PDF",
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
+  }
 };
 
 export default function RootLayout({ children }) {

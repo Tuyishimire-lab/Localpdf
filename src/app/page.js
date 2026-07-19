@@ -98,6 +98,24 @@ const tools = [
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'SoftwareApplication',
+            'name': 'LocalPDF',
+            'operatingSystem': 'All',
+            'applicationCategory': 'UtilitiesApplication',
+            'description': 'Free and secure client-side PDF tools operating 100% in your browser. No files uploaded to servers.',
+            'offers': {
+              '@type': 'Offer',
+              'price': '0',
+              'priceCurrency': 'USD'
+            }
+          })
+        }}
+      />
       <section className="dashboard-title-section">
         <h1 className="dashboard-title">
           Every tool you need to work with <span>PDFs</span>
