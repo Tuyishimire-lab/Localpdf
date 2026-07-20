@@ -1,5 +1,5 @@
 export default function robots() {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://localpdf.io';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.uselocalpdf.com';
 
   return {
     rules: {
