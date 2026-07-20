@@ -1,8 +1,11 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Trash2, Plus } from 'lucide-react';
 import DragDropZone from './DragDropZone';
+import MetadataViewer from './MetadataViewer';
+import { useSharedFile } from '../../context/FileContext';
 
 export default function Workspace({
   title,
@@ -18,6 +21,16 @@ export default function Workspace({
   leftPane,
   children // Settings options panel
 }) {
+  const { sharedFile, clearFile } = useSharedFile();
+
+  // Auto load file if routed from landing page drag-drop
+  useEffect(() => {
+    if (sharedFile && files.length === 0) {
+      onFilesSelected([sharedFile]);
+      clearFile();
+    }
+  }, [sharedFile, files, onFilesSelected, clearFile]);
+
   return (
     <div style={{ width: '100%' }}>
       <div style={{ marginBottom: '1.5rem' }}>
@@ -78,13 +91,20 @@ export default function Workspace({
 
           {/* Right panel: Operations options */}
           <aside className="workspace-right">
-            {children}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, width: '100%' }}>
+              {children}
+              
+              {/* PDF metadata accordion */}
+              {files[0]?.type === 'application/pdf' && (
+                <MetadataViewer file={files[0]} />
+              )}
+            </div>
             
             <button 
               className="btn-primary" 
               onClick={onProcess}
               disabled={processing || files.length === 0}
-              style={{ marginTop: 'auto' }}
+              style={{ marginTop: '1.5rem', width: '100%' }}
             >
               {processLabel}
             </button>

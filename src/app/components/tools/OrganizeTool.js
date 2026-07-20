@@ -19,6 +19,8 @@ export default function OrganizeTool() {
   const [processedBlob, setProcessedBlob] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  const [draggedIndex, setDraggedIndex] = useState(null);
+
   const generateUid = () => {
     return typeof crypto !== 'undefined' && crypto.randomUUID 
       ? crypto.randomUUID() 
@@ -111,6 +113,35 @@ export default function OrganizeTool() {
     ]);
   };
 
+  // Drag and drop sorting handlers
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    
+    const updated = [...pageItems];
+    const draggedItem = updated[draggedIndex];
+    updated.splice(draggedIndex, 1);
+    updated.splice(index, 0, draggedItem);
+    
+    setPageItems(updated);
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   const handleProcess = async () => {
     if (pageItems.length === 0 || files.length === 0) {
       alert("Please ensure your document has at least one page.");
@@ -161,74 +192,123 @@ export default function OrganizeTool() {
     <div style={{ width: '100%' }}>
       <div className="preview-grid">
         {pageItems.map((item, index) => {
-          if (item.isBlank) {
-            return (
-              <div key={item.id} className="preview-card" style={{ cursor: 'grab' }}>
-                <div className="preview-badge">{index + 1}</div>
-                <button 
-                  className="preview-remove-btn" 
-                  onClick={() => deletePage(index)}
-                  title="Remove Blank Page"
-                >
-                  <Trash2 size={12} />
-                </button>
-                <div 
-                  className="preview-image-container" 
-                  style={{ 
-                    aspectRatio: '1 / 1.414', 
-                    background: '#151529',
-                    border: '1px dashed rgba(255,255,255,0.1)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px'
-                  }}
-                >
-                  <span style={{ fontSize: '0.85rem', fontWeight: '800', opacity: 0.6 }}>BLANK</span>
-                  <span style={{ fontSize: '0.65rem', opacity: 0.4 }}>A4 Page</span>
-                </div>
-                <div className="preview-name">Blank Page</div>
-                <div style={{ display: 'flex', gap: '0.25rem', width: '100%', marginTop: '0.5rem' }}>
-                  <button 
-                    className="rotate-card-btn" 
-                    disabled={index === 0} 
-                    onClick={() => movePage(index, -1)}
-                    title="Move Left"
-                  >
-                    <ArrowUp size={10} style={{ transform: 'rotate(-90deg)' }} />
-                  </button>
-                  <button 
-                    className="rotate-card-btn" 
-                    disabled={index === pageItems.length - 1} 
-                    onClick={() => movePage(index, 1)}
-                    title="Move Right"
-                  >
-                    <ArrowDown size={10} style={{ transform: 'rotate(-90deg)' }} />
-                  </button>
-                </div>
-              </div>
-            );
-          }
+          const isDragged = draggedIndex === index;
 
           return (
-            <div key={item.id} style={{ display: 'contents' }}>
-              <PagePreview
-                pdfDoc={pdfDoc}
-                pageNum={item.originalIndex + 1}
-                rotation={item.rotation}
-                label={(index + 1).toString()}
-                showRemove={true}
-                onRemove={() => deletePage(index)}
-                onRotate={() => rotatePage(index)}
-              />
-              {/* Inject move/duplicate controls overlay underneath PagePreview using React portal or simple layout adjustments */}
-              <div 
-                className="preview-actions-overlay" 
-                style={{ 
-                  display: 'none' // Rendered inside layout or custom styling
-                }}
-              ></div>
-              {/* To fit custom reorder/duplication buttons for active card: */}
-              <div className="preview-reorder-container" style={{ display: 'none' }}></div>
+            <div
+              key={item.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDrop={(e) => handleDrop(e, index)}
+              onDragEnd={handleDragEnd}
+              className={`draggable-card-wrapper ${isDragged ? 'dragging' : ''}`}
+              style={{
+                opacity: isDragged ? 0.3 : 1,
+                cursor: 'grab',
+                position: 'relative',
+                transition: 'opacity 0.15s ease',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              {item.isBlank ? (
+                <div className="preview-card" style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <div className="preview-badge">{index + 1}</div>
+                  <button 
+                    className="preview-remove-btn" 
+                    onClick={() => deletePage(index)}
+                    type="button"
+                    title="Remove Blank Page"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                  <div 
+                    className="preview-image-container" 
+                    style={{ 
+                      aspectRatio: '1 / 1.414', 
+                      background: '#151529',
+                      border: '1px dashed rgba(255,255,255,0.1)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '4px',
+                      flex: 1
+                    }}
+                  >
+                    <span style={{ fontSize: '0.85rem', fontWeight: '800', opacity: 0.6 }}>BLANK</span>
+                    <span style={{ fontSize: '0.65rem', opacity: 0.4 }}>A4 Page</span>
+                  </div>
+                  <div className="preview-name">Blank Page</div>
+                  
+                  <div style={{ display: 'flex', gap: '0.25rem', width: '100%', marginTop: 'auto' }}>
+                    <button 
+                      type="button"
+                      className="rotate-card-btn" 
+                      disabled={index === 0} 
+                      onClick={() => movePage(index, -1)}
+                      title="Move Left"
+                      style={{ flex: 1 }}
+                    >
+                      <ArrowUp size={10} style={{ transform: 'rotate(-90deg)' }} />
+                    </button>
+                    <button 
+                      type="button"
+                      className="rotate-card-btn" 
+                      disabled={index === pageItems.length - 1} 
+                      onClick={() => movePage(index, 1)}
+                      title="Move Right"
+                      style={{ flex: 1 }}
+                    >
+                      <ArrowDown size={10} style={{ transform: 'rotate(-90deg)' }} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="preview-card" style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <PagePreview
+                    pdfDoc={pdfDoc}
+                    pageNum={item.originalIndex + 1}
+                    rotation={item.rotation}
+                    label={(index + 1).toString()}
+                    showRemove={true}
+                    onRemove={() => deletePage(index)}
+                    onRotate={() => rotatePage(index)}
+                  />
+                  <div style={{ display: 'flex', gap: '0.25rem', width: '100%', marginTop: 'auto' }}>
+                    <button 
+                      type="button"
+                      className="rotate-card-btn" 
+                      disabled={index === 0} 
+                      onClick={() => movePage(index, -1)}
+                      title="Move Left"
+                      style={{ flex: 1 }}
+                    >
+                      <ArrowUp size={10} style={{ transform: 'rotate(-90deg)' }} />
+                    </button>
+                    <button 
+                      type="button"
+                      className="rotate-card-btn" 
+                      onClick={() => duplicatePage(index)}
+                      title="Duplicate Page"
+                      style={{ flex: 1 }}
+                    >
+                      <Copy size={10} />
+                    </button>
+                    <button 
+                      type="button"
+                      className="rotate-card-btn" 
+                      disabled={index === pageItems.length - 1} 
+                      onClick={() => movePage(index, 1)}
+                      title="Move Right"
+                      style={{ flex: 1 }}
+                    >
+                      <ArrowDown size={10} style={{ transform: 'rotate(-90deg)' }} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
@@ -265,7 +345,7 @@ export default function OrganizeTool() {
         </div>
 
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-          Drag and drop support is fully simulated via visual lists. Use page actions to duplicate, rotate, delete, or re-order. Output renders fully client-side.
+          Drag and drop items to sort, or use the navigation buttons beneath cards to re-order, duplicate, or delete.
         </p>
       </Workspace>
 

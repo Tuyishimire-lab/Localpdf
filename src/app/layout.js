@@ -4,6 +4,8 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
+import { FileProvider } from "../context/FileContext";
+import PWARegistration from "./components/PWARegistration";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -28,20 +30,24 @@ export const metadata = {
   },
   icons: {
     icon: '/favicon.png',
-  }
+  },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${outfit.variable} ${inter.variable}`}>
       <body>
-        <div className="app-container">
-          <Header />
-          <main className="main-content">
-            {children}
-          </main>
-          <Footer />
-        </div>
+        <FileProvider>
+          <div className="app-container">
+            <Header />
+            <main className="main-content">
+              {children}
+            </main>
+            <Footer />
+          </div>
+        </FileProvider>
+        <PWARegistration />
         <Analytics />
         
         {/* Google Analytics (gtag.js) */}
