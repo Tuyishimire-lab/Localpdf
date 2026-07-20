@@ -209,7 +209,7 @@ export default function Home() {
           Every tool you need to work with <span>PDFs</span>
         </h1>
         <p className="dashboard-subtitle">
-          100% secure, private, and client-side. Your files never leave your computer—everything is processed instantly in your web browser.
+          100% secure, private, and client-side. Your files never leave your computer. Everything is processed instantly in your web browser.
         </p>
       </section>
 
