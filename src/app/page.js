@@ -4,20 +4,22 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSharedFile } from '../context/FileContext';
-import {
-  Layers,
-  Scissors,
-  Minimize2,
-  Image,
-  FileUp,
-  RotateCw,
-  Type,
-  Hash,
-  Lock,
+import { 
+  Layers, 
+  Scissors, 
+  Minimize2, 
+  Image, 
+  FileUp, 
+  RotateCw, 
+  Type, 
+  Hash, 
+  Lock, 
   Unlock,
   Grid,
   PenTool,
-  Upload
+  Upload,
+  FileSearch,
+  Edit3
 } from 'lucide-react';
 
 const tools = [
@@ -48,6 +50,20 @@ const tools = [
     description: 'Reduce the file size of your PDF documents by optimizing and scaling images client-side.',
     icon: Minimize2,
     href: '/tools/compress',
+  },
+  {
+    id: 'edit',
+    title: 'Edit PDF',
+    description: 'Add custom text overlays to document pages, drag, size, and stamp them.',
+    icon: Edit3,
+    href: '/tools/edit',
+  },
+  {
+    id: 'ocr',
+    title: 'OCR PDF',
+    description: 'Extract text from scanned PDF documents locally using built-in OCR.',
+    icon: FileSearch,
+    href: '/tools/ocr',
   },
   {
     id: 'pdf-to-jpg',
@@ -110,7 +126,7 @@ const tools = [
 export default function Home() {
   const router = useRouter();
   const { setFile } = useSharedFile();
-
+  
   const [dragOver, setDragOver] = useState(false);
   const [droppedFile, setDroppedFile] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -187,13 +203,13 @@ export default function Home() {
           })
         }}
       />
-
+      
       <section className="dashboard-title-section">
         <h1 className="dashboard-title">
           Every tool you need to work with <span>PDFs</span>
         </h1>
         <p className="dashboard-subtitle">
-          100% secure, private, and client-side. Your files never leave your computer everything is processed instantly in your web browser.
+          100% secure, private, and client-side. Your files never leave your computer—everything is processed instantly in your web browser.
         </p>
       </section>
 
@@ -214,10 +230,10 @@ export default function Home() {
 
       {/* Fullscreen dragover overlay */}
       {dragOver && (
-        <div
-          className="modal-overlay"
-          style={{
-            pointerEvents: 'none',
+        <div 
+          className="modal-overlay" 
+          style={{ 
+            pointerEvents: 'none', 
             background: 'rgba(7, 7, 20, 0.92)',
             border: '4px dashed var(--primary-color)',
             margin: '8px',
@@ -248,16 +264,18 @@ export default function Home() {
             <p className="modal-desc" style={{ marginBottom: '1.25rem' }}>
               Choose a tool to process <strong>{droppedFile?.name}</strong>:
             </p>
-
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '0.75rem',
+            
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(2, 1fr)', 
+              gap: '0.75rem', 
               width: '100%',
-              marginBottom: '1rem'
+              marginBottom: '1rem' 
             }}>
               <button className="btn-secondary" onClick={() => handleSelectTool('/tools/compress')}>Compress PDF</button>
               <button className="btn-secondary" onClick={() => handleSelectTool('/tools/split')}>Split PDF</button>
+              <button className="btn-secondary" onClick={() => handleSelectTool('/tools/edit')}>Edit PDF</button>
+              <button className="btn-secondary" onClick={() => handleSelectTool('/tools/ocr')}>OCR PDF</button>
               <button className="btn-secondary" onClick={() => handleSelectTool('/tools/protect')}>Protect PDF</button>
               <button className="btn-secondary" onClick={() => handleSelectTool('/tools/sign')}>Sign PDF</button>
               <button className="btn-secondary" onClick={() => handleSelectTool('/tools/organize')}>Organize PDF</button>
@@ -265,10 +283,10 @@ export default function Home() {
               <button className="btn-secondary" onClick={() => handleSelectTool('/tools/page-numbers')}>Page Numbers</button>
               <button className="btn-secondary" onClick={() => handleSelectTool('/tools/rotate')}>Rotate PDF</button>
             </div>
-
-            <button
-              className="btn-secondary"
-              onClick={() => setModalOpen(false)}
+            
+            <button 
+              className="btn-secondary" 
+              onClick={() => setModalOpen(false)} 
               style={{ width: '100%', borderColor: 'transparent', color: 'var(--text-muted)' }}
             >
               Cancel
