@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { Analytics } from "@vercel/analytics/react";
+import Script from "next/script";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -39,6 +40,20 @@ export default function RootLayout({ children }) {
           <Footer />
         </div>
         <Analytics />
+        
+        {/* Google Analytics (gtag.js) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-96QW4FDKFV"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-96QW4FDKFV');
+          `}
+        </Script>
       </body>
     </html>
   );
