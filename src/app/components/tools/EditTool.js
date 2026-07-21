@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Edit3, ChevronLeft, ChevronRight, Plus, Trash2, Save } from 'lucide-react';
+import { Edit3, ChevronLeft, ChevronRight, Plus, Trash2, Save, Bold, Italic } from 'lucide-react';
 import Workspace from '../Workspace';
 import ProgressModal from '../ProgressModal';
 import { loadPdf, renderPageToDataUrl } from '../../../lib/pdfEngine';
@@ -43,6 +43,65 @@ export default function EditTool() {
     }
     renderViewport();
   }, [pdfDoc, activePage]);
+
+  const getCssFontFamily = (fontFamily) => {
+    switch (fontFamily) {
+      case 'Times Roman': return "'Times New Roman', Times, serif";
+      case 'Courier': return "'Courier New', Courier, monospace";
+      case 'Helvetica':
+      default:
+        return "Helvetica, Arial, sans-serif";
+    }
+  };
+
+  // Keyboard nudging controls
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!selectedOverlayId || editingOverlayId !== null) return;
+      
+      const step = e.shiftKey ? 5 : 1;
+      
+      switch (e.key) {
+        case 'ArrowUp':
+          e.preventDefault();
+          setOverlays((prev) =>
+            prev.map((o) => (o.id === selectedOverlayId ? { ...o, y: Math.max(0, o.y - step) } : o))
+          );
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          setOverlays((prev) =>
+            prev.map((o) => (o.id === selectedOverlayId ? { ...o, y: Math.min(95, o.y + step) } : o))
+          );
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          setOverlays((prev) =>
+            prev.map((o) => (o.id === selectedOverlayId ? { ...o, x: Math.max(0, o.x - step) } : o))
+          );
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          setOverlays((prev) =>
+            prev.map((o) => (o.id === selectedOverlayId ? { ...o, x: Math.min(90, o.x + step) } : o))
+          );
+          break;
+        case 'Delete':
+        case 'Backspace':
+          e.preventDefault();
+          setOverlays((prev) => prev.filter((item) => item.id !== selectedOverlayId));
+          setSelectedOverlayId(null);
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedOverlayId, editingOverlayId]);
 
   const generateUid = () => {
     return typeof crypto !== 'undefined' && crypto.randomUUID 
@@ -92,7 +151,10 @@ export default function EditTool() {
       x: 30, // Percentage width
       y: 40, // Percentage height
       fontSize: 16,
-      color: '#ff4757' // Default color matches primary accent
+      color: '#ff4757', // Default color matches primary accent
+      fontFamily: 'Helvetica',
+      isBold: false,
+      isItalic: false
     };
     
     setOverlays((prev) => [...prev, newOverlay]);
@@ -181,8 +243,33 @@ export default function EditTool() {
       const pdfDocObj = await PDFDocument.load(fileBytes, { ignoreEncryption: true });
       const pages = pdfDocObj.getPages();
       
-      // Embed standard Helvetica font
-      const helveticaFont = await pdfDocObj.embedFont(StandardFonts.Helvetica);
+      // Font embedding cache to avoid embedding the same font multiple times
+      const fontCache = {};
+      const getEmbeddedFont = async (family, isBold, isItalic) => {
+        let fontName = StandardFonts.Helvetica;
+        
+        if (family === 'Times Roman') {
+          if (isBold && isItalic) fontName = StandardFonts.TimesRomanBoldItalic;
+          else if (isBold) fontName = StandardFonts.TimesRomanBold;
+          else if (isItalic) fontName = StandardFonts.TimesRomanItalic;
+          else fontName = StandardFonts.TimesRoman;
+        } else if (family === 'Courier') {
+          if (isBold && isItalic) fontName = StandardFonts.CourierBoldOblique;
+          else if (isBold) fontName = StandardFonts.CourierBold;
+          else if (isItalic) fontName = StandardFonts.CourierOblique;
+          else fontName = StandardFonts.Courier;
+        } else { // Helvetica
+          if (isBold && isItalic) fontName = StandardFonts.HelveticaBoldOblique;
+          else if (isBold) fontName = StandardFonts.HelveticaBold;
+          else if (isItalic) fontName = StandardFonts.HelveticaOblique;
+          else fontName = StandardFonts.Helvetica;
+        }
+        
+        if (!fontCache[fontName]) {
+          fontCache[fontName] = await pdfDocObj.embedFont(fontName);
+        }
+        return fontCache[fontName];
+      };
 
       // Loop through and stamp all overlay text items
       for (const item of overlays) {
@@ -197,11 +284,13 @@ export default function EditTool() {
         // Font size height offset
         const pdfY = height - ((item.y / 100) * height) - item.fontSize;
 
+        const embeddedFont = await getEmbeddedFont(item.fontFamily, item.isBold, item.isItalic);
+
         targetPage.drawText(item.text, {
           x: pdfX,
           y: pdfY,
           size: item.fontSize,
-          font: helveticaFont,
+          font: embeddedFont,
           color: hexToPdfRgb(item.color)
         });
       }
@@ -328,8 +417,10 @@ export default function EditTool() {
                         background: '#ffffff',
                         border: '1px solid var(--primary-color)',
                         color: '#000000',
-                        fontFamily: 'Helvetica, Arial, sans-serif',
+                        fontFamily: getCssFontFamily(item.fontFamily),
                         fontSize: `${item.fontSize}px`,
+                        fontWeight: item.isBold ? 'bold' : 'normal',
+                        fontStyle: item.isItalic ? 'italic' : 'normal',
                         padding: '1px 4px',
                         outline: 'none'
                       }}
@@ -338,10 +429,11 @@ export default function EditTool() {
                   ) : (
                     <span
                       style={{
-                        fontFamily: 'Helvetica, Arial, sans-serif',
+                        fontFamily: getCssFontFamily(item.fontFamily),
                         fontSize: `${item.fontSize}px`,
                         color: item.color,
-                        fontWeight: 'bold',
+                        fontWeight: item.isBold ? 'bold' : 'normal',
+                        fontStyle: item.isItalic ? 'italic' : 'normal',
                         whiteSpace: 'nowrap'
                       }}
                     >
@@ -439,12 +531,83 @@ export default function EditTool() {
                 />
               </div>
 
+              {/* Font Family Selection */}
+              <div>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
+                  Font Family
+                </label>
+                <select
+                  value={selectedOverlay.fontFamily || 'Helvetica'}
+                  onChange={(e) => updateSelectedOverlay('fontFamily', e.target.value)}
+                  className="options-select"
+                  style={{
+                    padding: '0.6rem',
+                    borderRadius: '4px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'rgba(7,7,20,0.8)',
+                    color: 'var(--text-main)',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  <option value="Helvetica">Helvetica</option>
+                  <option value="Times Roman">Times New Roman</option>
+                  <option value="Courier">Courier</option>
+                </select>
+              </div>
+
+              {/* Text Formatting Controls */}
+              <div>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
+                  Text Styling
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => updateSelectedOverlay('isBold', !selectedOverlay.isBold)}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0.6rem',
+                      borderRadius: 'var(--border-radius-md)',
+                      backgroundColor: selectedOverlay.isBold ? 'var(--primary-color)' : 'rgba(255,255,255,0.05)',
+                      border: '1px solid var(--border-color)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      transition: 'var(--transition-smooth)'
+                    }}
+                  >
+                    <Bold size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateSelectedOverlay('isItalic', !selectedOverlay.isItalic)}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0.6rem',
+                      borderRadius: 'var(--border-radius-md)',
+                      backgroundColor: selectedOverlay.isItalic ? 'var(--secondary-color)' : 'rgba(255,255,255,0.05)',
+                      border: '1px solid var(--border-color)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      transition: 'var(--transition-smooth)'
+                    }}
+                  >
+                    <Italic size={16} />
+                  </button>
+                </div>
+              </div>
+
               {/* Color list palette picker */}
               <div>
                 <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
                   Text Color
                 </label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                   {['#000000', '#ff4757', '#0000b3', '#2ed573', '#ffa502', '#ffffff'].map((c) => (
                     <button
                       key={c}
@@ -460,6 +623,24 @@ export default function EditTool() {
                       }}
                     ></button>
                   ))}
+                  
+                  {/* Custom color picker input */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginLeft: '0.25rem' }}>
+                    <input
+                      type="color"
+                      value={['#000000', '#ff4757', '#0000b3', '#2ed573', '#ffa502', '#ffffff'].includes(selectedOverlay.color) ? '#ff4757' : selectedOverlay.color}
+                      onChange={(e) => updateSelectedOverlay('color', e.target.value)}
+                      style={{
+                        border: 'none',
+                        background: 'none',
+                        width: '24px',
+                        height: '24px',
+                        cursor: 'pointer',
+                        padding: 0
+                      }}
+                    />
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Custom</span>
+                  </div>
                 </div>
               </div>
 
