@@ -617,14 +617,14 @@ export default function EditTool() {
       <div
         style={{
           width: '100%',
-          maxWidth: '850px',
+          maxWidth: '100%',
           maxHeight: '68vh',
           overflow: 'auto',
           border: '1px solid var(--border-color)',
           borderRadius: '8px',
           backgroundColor: 'rgba(7,7,20,0.6)',
           backdropFilter: 'blur(10px)',
-          padding: '1.5rem',
+          padding: '0.75rem',
           display: 'grid',
           placeItems: 'center'
         }}

@@ -33,15 +33,35 @@ export default function Workspace({
 
   return (
     <div style={{ width: '100%' }}>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <Link href="/" className="btn-secondary" style={{ display: 'inline-flex', marginBottom: '1rem' }}>
-          <ArrowLeft size={16} />
-          Back to Tools
-        </Link>
-        <h1 className="workspace-title">
-          {IconComponent && <IconComponent size={28} style={{ color: 'var(--primary-color)' }} />}
+      <div 
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          width: '100%', 
+          marginBottom: '1.25rem',
+          flexWrap: 'wrap',
+          gap: '0.75rem'
+        }}
+      >
+        <h1 className="workspace-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {IconComponent && <IconComponent size={24} style={{ color: 'var(--primary-color)' }} />}
           {title}
         </h1>
+        <Link 
+          href="/" 
+          className="btn-secondary" 
+          style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center',
+            gap: '0.4rem', 
+            padding: '0.4rem 0.8rem', 
+            fontSize: '0.85rem' 
+          }}
+        >
+          <ArrowLeft size={14} />
+          Back to Tools
+        </Link>
       </div>
 
       {files.length === 0 ? (
