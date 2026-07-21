@@ -1,11 +1,10 @@
-'use client';
+import ClientPage from './ClientPage';
 
-import dynamic from 'next/dynamic';
+export const metadata = {
+  title: 'Edit PDF Online - Add Text & Stamps to PDF Files | LocalPDF',
+  description: 'Add text overlays, shapes, and stamps to your PDF documents. Move, resize, and edit directly on your browser securely.',
+};
 
-const EditTool = dynamic(() => import('@/app/components/tools/EditTool'), {
-  ssr: false,
-});
-
-export default function EditPage() {
-  return <EditTool />;
+export default function Page() {
+  return <ClientPage />;
 }

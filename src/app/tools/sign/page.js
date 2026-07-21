@@ -1,11 +1,10 @@
-'use client';
+import ClientPage from './ClientPage';
 
-import dynamic from 'next/dynamic';
+export const metadata = {
+  title: 'Sign PDF Online - Draw or Load Electronic Signatures | LocalPDF',
+  description: 'E-Sign your PDF documents client-side. Draw your signature, type it, or upload a signature image. Safe and serverless.',
+};
 
-const SignTool = dynamic(() => import('@/app/components/tools/SignTool'), {
-  ssr: false,
-});
-
-export default function SignPage() {
-  return <SignTool />;
+export default function Page() {
+  return <ClientPage />;
 }

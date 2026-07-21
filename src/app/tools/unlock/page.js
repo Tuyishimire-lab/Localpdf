@@ -1,16 +1,10 @@
-'use client';
+import ClientPage from './ClientPage';
 
-import dynamic from 'next/dynamic';
-
-const UnlockTool = dynamic(() => import('../../components/tools/UnlockTool'), {
-  ssr: false,
-  loading: () => (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-      <div className="modal-spinner"></div>
-    </div>
-  )
-});
+export const metadata = {
+  title: 'Unlock PDF Online - Remove PDF Password & Security | LocalPDF',
+  description: 'Remove password protection and decrypt secured PDF documents. Gain instant restriction-free access to your files locally.',
+};
 
 export default function Page() {
-  return <UnlockTool />;
+  return <ClientPage />;
 }

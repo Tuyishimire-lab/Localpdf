@@ -1,16 +1,10 @@
-'use client';
+import ClientPage from './ClientPage';
 
-import dynamic from 'next/dynamic';
-
-const SplitTool = dynamic(() => import('../../components/tools/SplitTool'), {
-  ssr: false,
-  loading: () => (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-      <div className="modal-spinner"></div>
-    </div>
-  )
-});
+export const metadata = {
+  title: 'Split PDF Online - Extract Pages & Ranges from PDF | LocalPDF',
+  description: 'Split your PDF files instantly. Extract specific page ranges or save every page as a separate PDF document locally in your web browser.',
+};
 
 export default function Page() {
-  return <SplitTool />;
+  return <ClientPage />;
 }

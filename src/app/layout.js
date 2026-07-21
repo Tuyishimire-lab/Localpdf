@@ -33,6 +33,28 @@ export const metadata = {
     icon: '/favicon.png',
   },
   manifest: '/manifest.json',
+  openGraph: {
+    title: 'LocalPDF | Free and Secure Client-Side PDF Tools',
+    description: 'Merge, split, compress, convert, rotate, watermark, protect and unlock PDFs 100% locally in your browser. Complete privacy, zero server uploads.',
+    url: 'https://www.uselocalpdf.com',
+    siteName: 'LocalPDF',
+    images: [
+      {
+        url: 'https://www.uselocalpdf.com/logo.png',
+        width: 800,
+        height: 800,
+        alt: 'LocalPDF Logo',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'LocalPDF | Free and Secure Client-Side PDF Tools',
+    description: 'Merge, split, compress, convert, rotate, watermark, protect and unlock PDFs 100% locally in your browser. Complete privacy, zero server uploads.',
+    images: ['https://www.uselocalpdf.com/logo.png'],
+  },
 };
 
 export default function RootLayout({ children }) {

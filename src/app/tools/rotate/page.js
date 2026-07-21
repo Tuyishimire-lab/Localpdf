@@ -1,16 +1,10 @@
-'use client';
+import ClientPage from './ClientPage';
 
-import dynamic from 'next/dynamic';
-
-const RotateTool = dynamic(() => import('../../components/tools/RotateTool'), {
-  ssr: false,
-  loading: () => (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-      <div className="modal-spinner"></div>
-    </div>
-  )
-});
+export const metadata = {
+  title: 'Rotate PDF Pages Online - Rotate and Save Instantly | LocalPDF',
+  description: 'Rotate individual pages or all pages of your PDF document visually. Save modified PDFs immediately inside your web browser.',
+};
 
 export default function Page() {
-  return <RotateTool />;
+  return <ClientPage />;
 }

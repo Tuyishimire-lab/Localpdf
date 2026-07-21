@@ -1,16 +1,10 @@
-'use client';
+import ClientPage from './ClientPage';
 
-import dynamic from 'next/dynamic';
-
-const PdfToJpgTool = dynamic(() => import('../../components/tools/PdfToJpgTool'), {
-  ssr: false,
-  loading: () => (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-      <div className="modal-spinner"></div>
-    </div>
-  )
-});
+export const metadata = {
+  title: 'Convert PDF to JPG Online - High Quality PDF Images | LocalPDF',
+  description: 'Extract pages of your PDF document into high-quality JPG or PNG images. Fast local rendering guarantees complete file privacy.',
+};
 
 export default function Page() {
-  return <PdfToJpgTool />;
+  return <ClientPage />;
 }

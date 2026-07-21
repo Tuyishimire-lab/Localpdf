@@ -1,16 +1,10 @@
-'use client';
+import ClientPage from './ClientPage';
 
-import dynamic from 'next/dynamic';
-
-const JpgToPdfTool = dynamic(() => import('../../components/tools/JpgToPdfTool'), {
-  ssr: false,
-  loading: () => (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-      <div className="modal-spinner"></div>
-    </div>
-  )
-});
+export const metadata = {
+  title: 'Convert JPG to PDF Online - Turn Images to PDF Free | LocalPDF',
+  description: 'Convert JPG, PNG, and WebP images into a single PDF document. Customize page layout, size, and margin settings locally.',
+};
 
 export default function Page() {
-  return <JpgToPdfTool />;
+  return <ClientPage />;
 }

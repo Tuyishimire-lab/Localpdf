@@ -1,16 +1,10 @@
-'use client';
+import ClientPage from './ClientPage';
 
-import dynamic from 'next/dynamic';
-
-const OrganizeTool = dynamic(() => import('../../components/tools/OrganizeTool'), {
-  ssr: false,
-  loading: () => (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-      <div className="modal-spinner"></div>
-    </div>
-  )
-});
+export const metadata = {
+  title: 'Organize PDF Pages Online - Delete, Reorder & Rotate PDFs | LocalPDF',
+  description: 'Organize your PDF files online. Reorder, rotate, delete pages, or insert blank pages visually. 100% secure, private, and client-side processing.',
+};
 
 export default function Page() {
-  return <OrganizeTool />;
+  return <ClientPage />;
 }

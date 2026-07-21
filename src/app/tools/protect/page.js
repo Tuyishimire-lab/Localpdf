@@ -1,16 +1,10 @@
-'use client';
+import ClientPage from './ClientPage';
 
-import dynamic from 'next/dynamic';
-
-const ProtectTool = dynamic(() => import('../../components/tools/ProtectTool'), {
-  ssr: false,
-  loading: () => (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-      <div className="modal-spinner"></div>
-    </div>
-  )
-});
+export const metadata = {
+  title: 'Protect PDF Online - Encrypt PDFs with Passwords | LocalPDF',
+  description: 'Secure your PDF files by adding owner and user passwords. Encrypt files locally to restrict unauthorized access.',
+};
 
 export default function Page() {
-  return <ProtectTool />;
+  return <ClientPage />;
 }

@@ -1,11 +1,10 @@
-'use client';
+import ClientPage from './ClientPage';
 
-import dynamic from 'next/dynamic';
+export const metadata = {
+  title: 'OCR PDF Online - Extract Text from Scanned PDFs Locally | LocalPDF',
+  description: 'Convert scanned PDFs and images into searchable, editable text. Powered by local, client-side OCR engines for maximum privacy.',
+};
 
-const OcrTool = dynamic(() => import('@/app/components/tools/OcrTool'), {
-  ssr: false,
-});
-
-export default function OcrPage() {
-  return <OcrTool />;
+export default function Page() {
+  return <ClientPage />;
 }

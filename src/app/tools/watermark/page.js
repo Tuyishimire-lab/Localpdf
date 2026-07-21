@@ -1,16 +1,10 @@
-'use client';
+import ClientPage from './ClientPage';
 
-import dynamic from 'next/dynamic';
-
-const WatermarkTool = dynamic(() => import('../../components/tools/WatermarkTool'), {
-  ssr: false,
-  loading: () => (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-      <div className="modal-spinner"></div>
-    </div>
-  )
-});
+export const metadata = {
+  title: 'Watermark PDF Online - Add Text or Image Stamps | LocalPDF',
+  description: 'Protect your files with custom text or image watermarks. Adjust transparency, angle, and grid position locally.',
+};
 
 export default function Page() {
-  return <WatermarkTool />;
+  return <ClientPage />;
 }
