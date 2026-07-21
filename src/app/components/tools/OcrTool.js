@@ -18,15 +18,127 @@ export default function OcrTool() {
   const [processing, setProcessing] = useState(false);
   const [progressStatus, setProgressStatus] = useState('');
   const [progressVal, setProgressVal] = useState(0);
-  const [extractedText, setExtractedText] = useState('');
+  const [ocrResultData, setOcrResultData] = useState(null);
 
-  // Render active page thumbnail at 1.5x scale for high-res OCR input
+  // New configuration options
+  const [language, setLanguage] = useState('eng');
+  const [enhanceContrast, setEnhanceContrast] = useState(true);
+  const [binarize, setBinarize] = useState(false);
+  const [layoutFormat, setLayoutFormat] = useState('preserve');
+
+  // Canvas contrast boosting and optional binarization preprocessing helper
+  const preprocessImage = (imageSrc, options) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        
+        if (options.enhanceContrast) {
+          ctx.filter = 'grayscale(1) contrast(2.2) brightness(0.95)';
+        }
+        
+        ctx.drawImage(img, 0, 0);
+        
+        if (options.binarize) {
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i+1];
+            const b = data[i+2];
+            const v = (0.2126 * r + 0.7152 * g + 0.0722 * b >= 128) ? 255 : 0;
+            data[i] = v;
+            data[i+1] = v;
+            data[i+2] = v;
+          }
+          ctx.putImageData(imgData, 0, 0);
+        }
+        
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.src = imageSrc;
+    });
+  };
+
+  // Structured OCR formatting engine
+  const formatRecognizedData = (data, format) => {
+    if (!data) return '';
+    
+    if (format === 'preserve') {
+      const blocks = data.blocks || [];
+      let structuredText = "";
+      blocks.forEach((block) => {
+        if (block.paragraphs) {
+          block.paragraphs.forEach((p) => {
+            const paragraphText = p.lines.map(line => line.text.trim()).join('\n');
+            structuredText += paragraphText + "\n\n";
+          });
+        }
+      });
+      return structuredText.trim() || data.text || '';
+    }
+    
+    if (format === 'flow') {
+      const blocks = data.blocks || [];
+      let flowText = "";
+      blocks.forEach((block) => {
+        if (block.paragraphs) {
+          block.paragraphs.forEach((p) => {
+            let paragraphText = p.lines.map(line => line.text.trim()).join(' ');
+            paragraphText = paragraphText.replace(/-\s+/g, '');
+            flowText += paragraphText + "\n\n";
+          });
+        }
+      });
+      return flowText.trim() || data.text || '';
+    }
+    
+    if (format === 'table') {
+      const lines = data.lines || [];
+      if (lines.length === 0) return data.text || '';
+      
+      const sortedLines = [...lines].sort((a, b) => a.bbox.y0 - b.bbox.y0);
+      const rows = [];
+      sortedLines.forEach((line) => {
+        const midY = (line.bbox.y0 + line.bbox.y1) / 2;
+        let matchedRow = rows.find(row => {
+          const rowY0 = Math.min(...row.map(l => l.bbox.y0));
+          const rowY1 = Math.max(...row.map(l => l.bbox.y1));
+          return midY >= rowY0 && midY <= rowY1;
+        });
+        
+        if (matchedRow) {
+          matchedRow.push(line);
+        } else {
+          rows.push([line]);
+        }
+      });
+      
+      let tableOutput = "";
+      rows.forEach((row) => {
+        row.sort((a, b) => a.bbox.x0 - b.bbox.x0);
+        const rowText = row.map(item => item.text.trim()).join('\t');
+        tableOutput += rowText + '\n';
+      });
+      
+      return tableOutput.trim();
+    }
+    
+    return data.text || '';
+  };
+
+  const displayedText = ocrResultData ? formatRecognizedData(ocrResultData, layoutFormat) : '';
+
+  // Render active page thumbnail at 2.5x scale for high-res OCR input
   useEffect(() => {
     async function renderViewport() {
       if (!pdfDoc) return;
       try {
         setLoadingPage(true);
-        const url = await renderPageToDataUrl(pdfDoc, activePage + 1, 1.5);
+        const url = await renderPageToDataUrl(pdfDoc, activePage + 1, 2.5);
         setPageImg(url);
         setLoadingPage(false);
       } catch (err) {
@@ -43,7 +155,7 @@ export default function OcrTool() {
 
     setFiles([targetFile]);
     setActivePage(0);
-    setExtractedText('');
+    setOcrResultData(null);
     setProgressVal(0);
     setProgressStatus('');
 
@@ -64,7 +176,7 @@ export default function OcrTool() {
     setTotalPages(0);
     setActivePage(0);
     setPageImg(null);
-    setExtractedText('');
+    setOcrResultData(null);
     setProgressVal(0);
     setProgressStatus('');
   };
@@ -76,13 +188,16 @@ export default function OcrTool() {
     setProgressStatus('Initializing OCR engine...');
 
     try {
+      setProgressStatus('Preprocessing image for high accuracy...');
+      const processedUrl = await preprocessImage(pageImg, { enhanceContrast, binarize });
+
       const result = await Tesseract.recognize(
-        pageImg,
-        'eng',
+        processedUrl,
+        language,
         {
           logger: (m) => {
             if (m.status === 'recognizing text') {
-              setProgressStatus(`Recognizing text...`);
+              setProgressStatus(`Recognizing text (${language.toUpperCase()})...`);
               setProgressVal(Math.round(m.progress * 100));
             } else {
               setProgressStatus(`${m.status.charAt(0).toUpperCase() + m.status.slice(1)}...`);
@@ -91,7 +206,7 @@ export default function OcrTool() {
         }
       );
 
-      setExtractedText(result.data.text || 'No text could be recognized on this page.');
+      setOcrResultData(result.data);
       setProcessing(false);
     } catch (err) {
       console.error("OCR recognition error:", err);
@@ -101,15 +216,15 @@ export default function OcrTool() {
   };
 
   const handleCopyText = () => {
-    if (!extractedText) return;
-    navigator.clipboard.writeText(extractedText);
+    if (!displayedText) return;
+    navigator.clipboard.writeText(displayedText);
     alert("Text copied to clipboard!");
   };
 
   const handleDownloadText = () => {
-    if (!extractedText) return;
+    if (!displayedText) return;
     
-    const blob = new Blob([extractedText], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([displayedText], { type: 'text/plain;charset=utf-8' });
     const name = files[0].name.replace('.pdf', '');
     
     // Trigger download
@@ -133,7 +248,7 @@ export default function OcrTool() {
           disabled={activePage === 0} 
           onClick={() => {
             setActivePage(prev => prev - 1);
-            setExtractedText('');
+            setOcrResultData(null);
             setProgressVal(0);
           }}
           type="button"
@@ -148,7 +263,7 @@ export default function OcrTool() {
           disabled={activePage === totalPages - 1} 
           onClick={() => {
             setActivePage(prev => prev + 1);
-            setExtractedText('');
+            setOcrResultData(null);
             setProgressVal(0);
           }}
           type="button"
@@ -197,7 +312,110 @@ export default function OcrTool() {
         leftPane={leftPane}
       >
         <div>
-          <h3 className="options-title">OCR Text Extraction</h3>
+          <h3 className="options-title">OCR Configurations</h3>
+
+          {/* Configuration Grid */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginBottom: '1.5rem' }}>
+            
+            {/* Language Selector */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem', fontWeight: 'bold' }}>
+                Document Language
+              </label>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="options-select"
+                style={{
+                  width: '100%',
+                  padding: '0.6rem',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'rgba(7,7,20,0.8)',
+                  color: 'var(--text-main)',
+                  fontSize: '0.85rem'
+                }}
+              >
+                <option value="eng">English</option>
+                <option value="spa">Spanish (Español)</option>
+                <option value="fra">French (Français)</option>
+                <option value="deu">German (Deutsch)</option>
+                <option value="ita">Italian (Italiano)</option>
+                <option value="por">Portuguese (Português)</option>
+                <option value="nld">Dutch (Nederlands)</option>
+                <option value="chi_sim">Chinese (Simplified)</option>
+                <option value="jpn">Japanese (日本語)</option>
+              </select>
+            </div>
+
+            {/* Preprocessing Toggles */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Image Preprocessing
+              </span>
+              
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                <input
+                  type="checkbox"
+                  checked={enhanceContrast}
+                  onChange={(e) => setEnhanceContrast(e.target.checked)}
+                  style={{ accentColor: 'var(--primary-color)' }}
+                />
+                Enhance Contrast (Auto Grayscale)
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                <input
+                  type="checkbox"
+                  checked={binarize}
+                  onChange={(e) => setBinarize(e.target.checked)}
+                  style={{ accentColor: 'var(--primary-color)' }}
+                />
+                Binarize Image (Max Threshold)
+              </label>
+            </div>
+
+            {/* Layout Reconstructor */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                Layout Organization
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {[
+                  { id: 'preserve', label: 'Preserve Layout', desc: 'Maintains multi-column blocks and paragraphs' },
+                  { id: 'flow', label: 'Single Text Flow', desc: 'Clean sentences, ideal for copying into Word' },
+                  { id: 'table', label: 'Reconstruct Tables', desc: 'CSV/Tab aligned grid (paste to Excel)' }
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setLayoutFormat(option.id)}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      padding: '0.6rem 0.8rem',
+                      borderRadius: '6px',
+                      border: layoutFormat === option.id ? '1px solid var(--primary-color)' : '1px solid var(--border-color)',
+                      backgroundColor: layoutFormat === option.id ? 'rgba(78,93,234,0.1)' : 'rgba(255,255,255,0.02)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.2s ease',
+                      width: '100%'
+                    }}
+                  >
+                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: layoutFormat === option.id ? 'var(--primary-color)' : 'var(--text-main)' }}>
+                      {option.label}
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                      {option.desc}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </div>
 
           {/* Loader and progress status indicator */}
           {processing && (
@@ -237,7 +455,7 @@ export default function OcrTool() {
           )}
 
           {/* Output text box */}
-          {extractedText ? (
+          {displayedText ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 'bold' }}>
                 <Sparkles size={16} style={{ color: 'var(--secondary-color)' }} />
@@ -245,7 +463,7 @@ export default function OcrTool() {
               </div>
 
               <textarea
-                value={extractedText}
+                value={displayedText}
                 readOnly
                 style={{
                   width: '100%',
