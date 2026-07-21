@@ -157,7 +157,7 @@ html, body {
 }
 
 .dashboard-title {
-  font-size: 2.75rem;
+  font-size: 2.3rem;
   font-weight: 800;
   margin-bottom: 0.75rem;
   letter-spacing: -1px;
@@ -171,15 +171,15 @@ html, body {
 
 .dashboard-subtitle {
   color: var(--text-muted);
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   max-width: 600px;
   margin: 0 auto;
 }
 
 .tools-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
   width: 100%;
 }
 
@@ -187,13 +187,13 @@ html, body {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
-  padding: 1.75rem;
+  padding: 1.25rem;
   text-decoration: none;
   color: var(--text-main);
   transition: var(--transition-smooth);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
   position: relative;
   overflow: hidden;
 }
@@ -222,8 +222,8 @@ html, body {
 }
 
 .tool-card-icon-container {
-  width: 50px;
-  height: 50px;
+  width: 42px;
+  height: 42px;
   border-radius: var(--border-radius-md);
   display: flex;
   align-items: center;
@@ -240,15 +240,15 @@ html, body {
 }
 
 .tool-card-title {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: -0.2px;
 }
 
 .tool-card-description {
   color: var(--text-muted);
-  font-size: 0.875rem;
-  line-height: 1.5;
+  font-size: 0.825rem;
+  line-height: 1.45;
   flex: 1;
 }
 
