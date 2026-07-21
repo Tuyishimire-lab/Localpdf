@@ -19,7 +19,19 @@ import Workspace from '../Workspace';
 import ProgressModal from '../ProgressModal';
 import { loadPdf, renderPageToDataUrl } from '../../../lib/pdfEngine';
 import { downloadFile } from '../../../lib/utils';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
+
+function hexToPdfRgb(hex) {
+  if (!hex || hex === 'transparent') return rgb(1, 1, 1);
+  let c = hex.replace('#', '');
+  if (c.length === 3) {
+    c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+  }
+  const r = parseInt(c.substring(0, 2), 16) / 255;
+  const g = parseInt(c.substring(2, 4), 16) / 255;
+  const b = parseInt(c.substring(4, 6), 16) / 255;
+  return rgb(isNaN(r) ? 1 : r, isNaN(g) ? 1 : g, isNaN(b) ? 1 : b);
+}
 
 export default function EditTool() {
   const [files, setFiles] = useState([]);
@@ -434,7 +446,7 @@ export default function EditTool() {
         allPagesData[activePage] = { objects, width: rawWidth, height: rawHeight };
       }
 
-      // Loop and project transparent drawings over target PDF pages (using a dedicated headless element)
+      // Loop and project transparent drawings over target PDF pages
       for (let i = 0; i < pages.length; i++) {
         const pageData = allPagesData[i];
         const hasObjects = pageData && pageData.objects && pageData.objects.length > 0;
@@ -443,46 +455,73 @@ export default function EditTool() {
           const targetPage = pages[i];
           const { width: pdfPageWidth, height: pdfPageHeight } = targetPage.getSize();
 
-          // We want to render the page overlays on a headless canvas of the target dimensions
-          const targetWidth = pageData.width || pdfPageWidth * 1.2;
-          const targetHeight = pageData.height || pdfPageHeight * 1.2;
+          // 1. Draw the native whiteout rectangles directly on the PDF page first (renders crisp vectors, no antialiasing grey fringe)
+          pageData.objects.forEach(obj => {
+            if (obj.type === 'rect') {
+              const scaleX = pdfPageWidth / pageData.width;
+              const scaleY = pdfPageHeight / pageData.height;
 
-          const tempEl = document.createElement('canvas');
-          tempEl.width = targetWidth;
-          tempEl.height = targetHeight;
+              const rectWidth = (obj.width * (obj.scaleX || 1)) * scaleX;
+              const rectHeight = (obj.height * (obj.scaleY || 1)) * scaleY;
+              const rectX = obj.left * scaleX;
+              // Translate y from top-left origin to bottom-left origin
+              const rectY = pdfPageHeight - ((obj.top + (obj.height * (obj.scaleY || 1))) * scaleY);
 
-          const tempCanvas = new fabricLib.Canvas(tempEl);
-
-          // Load the enlivened objects onto the temp canvas
-          await new Promise((resolve) => {
-            fabricLib.util.enlivenObjects(pageData.objects, (enlivenedObjects) => {
-              enlivenedObjects.forEach((obj) => {
-                tempCanvas.add(obj);
+              targetPage.drawRectangle({
+                x: rectX,
+                y: rectY,
+                width: rectWidth,
+                height: rectHeight,
+                color: hexToPdfRgb(obj.fill)
               });
-              tempCanvas.renderAll();
-              resolve();
+            }
+          });
+
+          // 2. Draw any remaining overlays (text, paths) using high-res PNG
+          const hasNonRect = pageData.objects.some(obj => obj.type !== 'rect');
+          if (hasNonRect) {
+            const targetWidth = pageData.width || pdfPageWidth * 1.2;
+            const targetHeight = pageData.height || pdfPageHeight * 1.2;
+
+            const tempEl = document.createElement('canvas');
+            tempEl.width = targetWidth;
+            tempEl.height = targetHeight;
+
+            const tempCanvas = new fabricLib.Canvas(tempEl);
+
+            // Load only non-rect overlays
+            await new Promise((resolve) => {
+              fabricLib.util.enlivenObjects(pageData.objects, (enlivenedObjects) => {
+                enlivenedObjects.forEach((obj) => {
+                  if (obj.type !== 'rect') {
+                    tempCanvas.add(obj);
+                  }
+                });
+                tempCanvas.renderAll();
+                resolve();
+              });
             });
-          });
 
-          // Export the transparent overlay at 2.5x multiplier for crispness (resolution matched to PDF points)
-          const overlayDataUrl = tempCanvas.toDataURL({
-            format: 'png',
-            multiplier: 2.5
-          });
+            // Export the transparent overlay at 2.5x multiplier for crispness
+            const overlayDataUrl = tempCanvas.toDataURL({
+              format: 'png',
+              multiplier: 2.5
+            });
 
-          tempCanvas.dispose();
+            tempCanvas.dispose();
 
-          // Embed drawing overlay PNG
-          const imageBytes = await fetch(overlayDataUrl).then((res) => res.arrayBuffer());
-          const embeddedImage = await pdfDocObj.embedPng(imageBytes);
+            // Embed drawing overlay PNG
+            const imageBytes = await fetch(overlayDataUrl).then((res) => res.arrayBuffer());
+            const embeddedImage = await pdfDocObj.embedPng(imageBytes);
 
-          // Draw the overlay layer matching page coordinates
-          targetPage.drawImage(embeddedImage, {
-            x: 0,
-            y: 0,
-            width: pdfPageWidth,
-            height: pdfPageHeight
-          });
+            // Draw the overlay layer matching page coordinates
+            targetPage.drawImage(embeddedImage, {
+              x: 0,
+              y: 0,
+              width: pdfPageWidth,
+              height: pdfPageHeight
+            });
+          }
         }
       }
 
@@ -867,7 +906,10 @@ export default function EditTool() {
                     {selectedType === 'rect' ? 'Fill Color' : 'Text Color'}
                   </label>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                    {['#ff4757', '#0000b3', '#2ed573', '#ffa502', '#ffffff', '#000000'].map((c) => (
+                    {(selectedType === 'rect'
+                      ? ['#ffffff', '#fafaf9', '#fcfcf5', '#f5f5f5', '#f1f1ee', '#000000']
+                      : ['#ff4757', '#0000b3', '#2ed573', '#ffa502', '#ffffff', '#000000']
+                    ).map((c) => (
                       <button
                         key={c}
                         type="button"
@@ -887,7 +929,10 @@ export default function EditTool() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginLeft: '0.25rem' }}>
                       <input
                         type="color"
-                        value={['#ff4757', '#0000b3', '#2ed573', '#ffa502', '#ffffff', '#000000'].includes(selectedColor) ? '#ff4757' : selectedColor}
+                        value={(selectedType === 'rect'
+                          ? ['#ffffff', '#fafaf9', '#fcfcf5', '#f5f5f5', '#f1f1ee', '#000000']
+                          : ['#ff4757', '#0000b3', '#2ed573', '#ffa502', '#ffffff', '#000000']
+                        ).includes(selectedColor) ? selectedColor : (selectedType === 'rect' ? '#ffffff' : '#ff4757')}
                         onChange={(e) => updateActiveObject('fill', e.target.value)}
                         style={{
                           border: 'none',
