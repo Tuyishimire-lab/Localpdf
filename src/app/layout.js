@@ -2,6 +2,7 @@ import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import CookieConsent from "./components/CookieConsent";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
 import { FileProvider } from "../context/FileContext";
@@ -48,6 +49,7 @@ export default function RootLayout({ children }) {
           </div>
         </FileProvider>
         <PWARegistration />
+        <CookieConsent />
         <Analytics />
         
         {/* Google Analytics (gtag.js) */}
