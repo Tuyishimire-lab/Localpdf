@@ -19,7 +19,8 @@ import {
   PenTool,
   Upload,
   FileSearch,
-  Edit3
+  Edit3,
+  FileText
 } from 'lucide-react';
 
 const tools = [
@@ -120,6 +121,13 @@ const tools = [
     description: 'Decrypt and remove password protection from PDFs so you can access them without prompt.',
     icon: Unlock,
     href: '/tools/unlock',
+  },
+  {
+    id: 'word-to-pdf',
+    title: 'Word/TXT to PDF',
+    description: 'Convert Microsoft Word (.docx) and plain text (.txt) files into high-quality PDFs client-side.',
+    icon: FileText,
+    href: '/tools/word-to-pdf',
   },
 ];
 
