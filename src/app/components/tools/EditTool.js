@@ -116,7 +116,7 @@ export default function EditTool() {
       canvas.dispose();
       fabricCanvasRef.current = null;
     };
-  }, [fabricLib]);
+  }, [fabricLib, files.length]);
 
   // Save current state and load new background image on page changes
   useEffect(() => {
@@ -481,8 +481,10 @@ export default function EditTool() {
           </div>
         )}
         
-        {/* Fabric Canvas Element */}
-        <canvas ref={canvasRef} />
+        {/* Stable wrapper container for the canvas */}
+        <div>
+          <canvas ref={canvasRef} />
+        </div>
       </div>
     </div>
   ) : null;
