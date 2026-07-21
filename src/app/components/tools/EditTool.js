@@ -1,12 +1,25 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Edit3, ChevronLeft, ChevronRight, Plus, Trash2, Save, Bold, Italic } from 'lucide-react';
+import { 
+  Edit3, 
+  ChevronLeft, 
+  ChevronRight, 
+  Plus, 
+  Trash2, 
+  Type, 
+  Square, 
+  PenTool, 
+  MousePointer, 
+  Bold, 
+  Italic, 
+  Undo2 
+} from 'lucide-react';
 import Workspace from '../Workspace';
 import ProgressModal from '../ProgressModal';
 import { loadPdf, renderPageToDataUrl } from '../../../lib/pdfEngine';
 import { downloadFile } from '../../../lib/utils';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument } from 'pdf-lib';
 
 export default function EditTool() {
   const [files, setFiles] = useState([]);
@@ -20,14 +33,34 @@ export default function EditTool() {
   const [processedBlob, setProcessedBlob] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Text layers list
-  const [overlays, setOverlays] = useState([]); // [{ id, pageIndex, text, x, y, fontSize, color }]
-  const [selectedOverlayId, setSelectedOverlayId] = useState(null);
-  const [editingOverlayId, setEditingOverlayId] = useState(null);
+  // Fabric.js state & refs
+  const canvasRef = useRef(null);
+  const fabricCanvasRef = useRef(null);
+  const prevPageRef = useRef(0);
+  const [fabricLib, setFabricLib] = useState(null);
+  const [canvasState, setCanvasState] = useState({}); // { [pageIndex]: JSON }
 
-  const viewportRef = useRef(null);
+  // Tool states
+  const [activeTool, setActiveTool] = useState('select'); // select, text, whiteout, draw
+  const [brushColor, setBrushColor] = useState('#ff4757');
+  const [brushWidth, setBrushWidth] = useState(4);
 
-  // Render active page viewport
+  // Active selection properties
+  const [selectedType, setSelectedType] = useState(null); // i-text, rect, path, etc.
+  const [selectedFontSize, setSelectedFontSize] = useState(20);
+  const [selectedFontFamily, setSelectedFontFamily] = useState('Helvetica');
+  const [selectedColor, setSelectedColor] = useState('#ff4757');
+  const [selectedIsBold, setSelectedIsBold] = useState(false);
+  const [selectedIsItalic, setSelectedIsItalic] = useState(false);
+
+  // Dynamically load Fabric.js client-side
+  useEffect(() => {
+    import('fabric').then((module) => {
+      setFabricLib(module.fabric);
+    });
+  }, []);
+
+  // Render active page viewport image
   useEffect(() => {
     async function renderViewport() {
       if (!pdfDoc) return;
@@ -44,53 +77,127 @@ export default function EditTool() {
     renderViewport();
   }, [pdfDoc, activePage]);
 
-  const getCssFontFamily = (fontFamily) => {
-    switch (fontFamily) {
-      case 'Times Roman': return "'Times New Roman', Times, serif";
-      case 'Courier': return "'Courier New', Courier, monospace";
-      case 'Helvetica':
-      default:
-        return "Helvetica, Arial, sans-serif";
-    }
-  };
+  // Initialize Fabric Canvas once
+  useEffect(() => {
+    if (!fabricLib || !canvasRef.current) return;
 
-  // Keyboard nudging controls
+    const canvas = new fabricLib.Canvas(canvasRef.current, {
+      width: 400,
+      height: 560,
+      backgroundColor: '#ffffff'
+    });
+
+    fabricCanvasRef.current = canvas;
+
+    // Handle object selections
+    const handleSelection = () => {
+      const activeObj = canvas.getActiveObject();
+      if (!activeObj) {
+        setSelectedType(null);
+        return;
+      }
+      setSelectedType(activeObj.type);
+      if (activeObj.type === 'i-text') {
+        setSelectedColor(activeObj.fill);
+        setSelectedFontSize(activeObj.fontSize);
+        setSelectedFontFamily(activeObj.fontFamily);
+        setSelectedIsBold(activeObj.fontWeight === 'bold');
+        setSelectedIsItalic(activeObj.fontStyle === 'italic');
+      } else if (activeObj.type === 'rect') {
+        setSelectedColor(activeObj.fill);
+      }
+    };
+
+    canvas.on('selection:created', handleSelection);
+    canvas.on('selection:updated', handleSelection);
+    canvas.on('selection:cleared', handleSelection);
+
+    return () => {
+      canvas.dispose();
+      fabricCanvasRef.current = null;
+    };
+  }, [fabricLib]);
+
+  // Save current state and load new background image on page changes
+  useEffect(() => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas || !pageImg || !fabricLib) return;
+
+    // Save previous active page state to JSON
+    if (prevPageRef.current !== activePage) {
+      const prevIndex = prevPageRef.current;
+      setCanvasState((prev) => ({
+        ...prev,
+        [prevIndex]: canvas.toJSON()
+      }));
+      prevPageRef.current = activePage;
+    }
+
+    // Set background image
+    canvas.clear();
+    canvas.isDrawingMode = false;
+    setActiveTool('select');
+
+    fabricLib.Image.fromURL(pageImg, (img) => {
+      canvas.setDimensions({ width: img.width, height: img.height });
+      
+      canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
+        scaleX: 1,
+        scaleY: 1
+      });
+
+      // Load saved annotation state if it exists
+      const savedState = canvasState[activePage];
+      if (savedState) {
+        canvas.loadFromJSON(savedState, () => {
+          canvas.renderAll();
+        });
+      }
+    });
+  }, [pageImg, activePage, fabricLib]);
+
+  // Handle keyboard nudging and deletion
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!selectedOverlayId || editingOverlayId !== null) return;
-      
-      const step = e.shiftKey ? 5 : 1;
-      
+      const canvas = fabricCanvasRef.current;
+      if (!canvas) return;
+
+      const activeObj = canvas.getActiveObject();
+      if (!activeObj) return;
+
+      // Don't nudge if actively editing text input
+      if (activeObj.isEditing) return;
+
+      const step = e.shiftKey ? 15 : 2;
+
       switch (e.key) {
         case 'ArrowUp':
           e.preventDefault();
-          setOverlays((prev) =>
-            prev.map((o) => (o.id === selectedOverlayId ? { ...o, y: Math.max(0, o.y - step) } : o))
-          );
+          activeObj.set({ top: activeObj.top - step });
+          canvas.renderAll();
           break;
         case 'ArrowDown':
           e.preventDefault();
-          setOverlays((prev) =>
-            prev.map((o) => (o.id === selectedOverlayId ? { ...o, y: Math.min(95, o.y + step) } : o))
-          );
+          activeObj.set({ top: activeObj.top + step });
+          canvas.renderAll();
           break;
         case 'ArrowLeft':
           e.preventDefault();
-          setOverlays((prev) =>
-            prev.map((o) => (o.id === selectedOverlayId ? { ...o, x: Math.max(0, o.x - step) } : o))
-          );
+          activeObj.set({ left: activeObj.left - step });
+          canvas.renderAll();
           break;
         case 'ArrowRight':
           e.preventDefault();
-          setOverlays((prev) =>
-            prev.map((o) => (o.id === selectedOverlayId ? { ...o, x: Math.min(90, o.x + step) } : o))
-          );
+          activeObj.set({ left: activeObj.left + step });
+          canvas.renderAll();
           break;
         case 'Delete':
         case 'Backspace':
           e.preventDefault();
-          setOverlays((prev) => prev.filter((item) => item.id !== selectedOverlayId));
-          setSelectedOverlayId(null);
+          canvas.remove(activeObj);
+          canvas.discardActiveObject();
+          canvas.renderAll();
+          setSelectedType(null);
           break;
         default:
           break;
@@ -101,12 +208,15 @@ export default function EditTool() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedOverlayId, editingOverlayId]);
+  }, []);
 
-  const generateUid = () => {
-    return typeof crypto !== 'undefined' && crypto.randomUUID 
-      ? crypto.randomUUID() 
-      : Math.random().toString(36).substring(2, 11);
+  const saveCurrentPageState = () => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+    setCanvasState((prev) => ({
+      ...prev,
+      [activePage]: canvas.toJSON()
+    }));
   };
 
   const handleFilesSelected = async (selectedFiles) => {
@@ -115,9 +225,8 @@ export default function EditTool() {
 
     setFiles([targetFile]);
     setActivePage(0);
-    setOverlays([]);
-    setSelectedOverlayId(null);
-    setEditingOverlayId(null);
+    prevPageRef.current = 0;
+    setCanvasState({});
     setProcessedBlob(null);
 
     try {
@@ -136,163 +245,171 @@ export default function EditTool() {
     setPdfDoc(null);
     setTotalPages(0);
     setActivePage(0);
+    prevPageRef.current = 0;
     setPageImg(null);
-    setOverlays([]);
-    setSelectedOverlayId(null);
-    setEditingOverlayId(null);
+    setCanvasState({});
     setProcessedBlob(null);
+    setSelectedType(null);
   };
 
-  const addTextOverlay = () => {
-    const newOverlay = {
-      id: generateUid(),
-      pageIndex: activePage,
-      text: 'Double click to edit text',
-      x: 30, // Percentage width
-      y: 40, // Percentage height
-      fontSize: 16,
-      color: '#ff4757', // Default color matches primary accent
-      fontFamily: 'Helvetica',
-      isBold: false,
-      isItalic: false
-    };
-    
-    setOverlays((prev) => [...prev, newOverlay]);
-    setSelectedOverlayId(newOverlay.id);
-  };
+  // Toolbox Operations
+  const handleToolSelect = (tool) => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas || !fabricLib) return;
 
-  const updateSelectedOverlay = (key, val) => {
-    setOverlays((prev) =>
-      prev.map((item) => (item.id === selectedOverlayId ? { ...item, [key]: val } : item))
-    );
-  };
+    setActiveTool(tool);
 
-  const deleteSelectedOverlay = () => {
-    setOverlays((prev) => prev.filter((item) => item.id !== selectedOverlayId));
-    setSelectedOverlayId(null);
-  };
-
-  // Draggable overlay handlers
-  const handleOverlayMouseDown = (e, id) => {
-    e.stopPropagation();
-    setSelectedOverlayId(id);
-    
-    // Ignore dragging if double-clicked to edit inline
-    if (editingOverlayId === id) return;
-
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    
-    const rect = viewport.getBoundingClientRect();
-    const startX = e.clientX;
-    const startY = e.clientY;
-    
-    const item = overlays.find((o) => o.id === id);
-    if (!item) return;
-
-    const initX = item.x;
-    const initY = item.y;
-
-    const handleMouseMove = (moveEvent) => {
-      const deltaX = moveEvent.clientX - startX;
-      const deltaY = moveEvent.clientY - startY;
+    if (tool === 'draw') {
+      canvas.isDrawingMode = true;
+      canvas.freeDrawingBrush.color = brushColor;
+      canvas.freeDrawingBrush.width = brushWidth;
+      canvas.discardActiveObject();
+      canvas.renderAll();
+    } else {
+      canvas.isDrawingMode = false;
       
-      const newXPercent = initX + (deltaX / rect.width) * 100;
-      const newYPercent = initY + (deltaY / rect.height) * 100;
-
-      setOverlays((prev) =>
-        prev.map((o) =>
-          o.id === id
-            ? {
-                ...o,
-                x: Math.max(0, Math.min(90, newXPercent)),
-                y: Math.max(0, Math.min(95, newYPercent))
-              }
-            : o
-        )
-      );
-    };
-
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  // Convert Hex codes to PDF RGB color array
-  const hexToPdfRgb = (hex) => {
-    try {
-      const r = parseInt(hex.slice(1, 3), 16) / 255;
-      const g = parseInt(hex.slice(3, 5), 16) / 255;
-      const b = parseInt(hex.slice(5, 7), 16) / 255;
-      return rgb(r, g, b);
-    } catch (e) {
-      return rgb(0, 0, 0); // Fallback to black
+      if (tool === 'text') {
+        const text = new fabricLib.IText('Add text overlay', {
+          left: canvas.width / 2 - 80,
+          top: canvas.height / 2 - 15,
+          fontFamily: 'Helvetica',
+          fontSize: 24,
+          fill: brushColor,
+          cornerColor: 'var(--primary-color)',
+          cornerSize: 8,
+          transparentCorners: false
+        });
+        canvas.add(text);
+        canvas.setActiveObject(text);
+        canvas.renderAll();
+        setActiveTool('select');
+      } else if (tool === 'whiteout') {
+        const rect = new fabricLib.Rect({
+          left: canvas.width / 2 - 60,
+          top: canvas.height / 2 - 20,
+          width: 120,
+          height: 40,
+          fill: '#ffffff',
+          strokeWidth: 0,
+          stroke: 'transparent',
+          cornerColor: 'var(--primary-color)',
+          cornerSize: 8,
+          transparentCorners: false
+        });
+        canvas.add(rect);
+        canvas.setActiveObject(rect);
+        canvas.renderAll();
+        setActiveTool('select');
+      }
     }
   };
 
+  const updateActiveObject = (key, value) => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj) return;
+
+    if (key === 'isBold') {
+      activeObj.set({ fontWeight: value ? 'bold' : 'normal' });
+      setSelectedIsBold(value);
+    } else if (key === 'isItalic') {
+      activeObj.set({ fontStyle: value ? 'italic' : 'normal' });
+      setSelectedIsItalic(value);
+    } else {
+      activeObj.set({ [key]: value });
+      if (key === 'fontSize') setSelectedFontSize(value);
+      if (key === 'fontFamily') setSelectedFontFamily(value);
+      if (key === 'color' || key === 'fill') setSelectedColor(value);
+    }
+
+    canvas.renderAll();
+  };
+
+  const deleteActiveObject = () => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+
+    const activeObj = canvas.getActiveObject();
+    if (activeObj) {
+      canvas.remove(activeObj);
+      canvas.discardActiveObject();
+      canvas.renderAll();
+      setSelectedType(null);
+    }
+  };
+
+  const updateBrushColor = (color) => {
+    setBrushColor(color);
+    const canvas = fabricCanvasRef.current;
+    if (canvas && canvas.isDrawingMode) {
+      canvas.freeDrawingBrush.color = color;
+    }
+  };
+
+  // Programmatic Stamping to PDF
   const handleProcess = async () => {
     setProcessing(true);
     setModalOpen(true);
 
     try {
+      saveCurrentPageState(); // Commit active canvas changes
+      
       const fileBytes = await files[0].arrayBuffer();
       const pdfDocObj = await PDFDocument.load(fileBytes, { ignoreEncryption: true });
       const pages = pdfDocObj.getPages();
-      
-      // Font embedding cache to avoid embedding the same font multiple times
-      const fontCache = {};
-      const getEmbeddedFont = async (family, isBold, isItalic) => {
-        let fontName = StandardFonts.Helvetica;
-        
-        if (family === 'Times Roman') {
-          if (isBold && isItalic) fontName = StandardFonts.TimesRomanBoldItalic;
-          else if (isBold) fontName = StandardFonts.TimesRomanBold;
-          else if (isItalic) fontName = StandardFonts.TimesRomanItalic;
-          else fontName = StandardFonts.TimesRoman;
-        } else if (family === 'Courier') {
-          if (isBold && isItalic) fontName = StandardFonts.CourierBoldOblique;
-          else if (isBold) fontName = StandardFonts.CourierBold;
-          else if (isItalic) fontName = StandardFonts.CourierOblique;
-          else fontName = StandardFonts.Courier;
-        } else { // Helvetica
-          if (isBold && isItalic) fontName = StandardFonts.HelveticaBoldOblique;
-          else if (isBold) fontName = StandardFonts.HelveticaBold;
-          else if (isItalic) fontName = StandardFonts.HelveticaOblique;
-          else fontName = StandardFonts.Helvetica;
+
+      // Combined state map including live unsaved modifications
+      const allPagesState = { ...canvasState };
+      if (fabricCanvasRef.current) {
+        allPagesState[activePage] = fabricCanvasRef.current.toJSON();
+      }
+
+      // Loop and project transparent drawings over target PDF pages
+      for (let i = 0; i < pages.length; i++) {
+        const pageState = allPagesState[i];
+        const hasObjects = pageState && pageState.objects && pageState.objects.length > 0;
+
+        if (hasObjects) {
+          const targetPage = pages[i];
+          const { width, height } = targetPage.getSize();
+
+          // Create temporary programmatic canvas matching the source dimensions
+          const tempEl = document.createElement('canvas');
+          tempEl.width = width * 2.5; // multiplier for crisp render
+          tempEl.height = height * 2.5;
+
+          const tempCanvas = new fabricLib.Canvas(tempEl);
+
+          await new Promise((resolve) => {
+            tempCanvas.loadFromJSON(pageState, () => {
+              // Strip background image so only annotations remain
+              tempCanvas.setBackgroundImage(null, tempCanvas.renderAll.bind(tempCanvas));
+              resolve();
+            });
+          });
+
+          // Render isolated drawings as transparent high-res PNG
+          const overlayDataUrl = tempCanvas.toDataURL({
+            format: 'png',
+            multiplier: 2.5
+          });
+
+          tempCanvas.dispose();
+
+          // Embed drawing overlay PNG
+          const imageBytes = await fetch(overlayDataUrl).then((res) => res.arrayBuffer());
+          const embeddedImage = await pdfDocObj.embedPng(imageBytes);
+
+          // Draw the overlay layer matching page coordinates
+          targetPage.drawImage(embeddedImage, {
+            x: 0,
+            y: 0,
+            width: width,
+            height: height
+          });
         }
-        
-        if (!fontCache[fontName]) {
-          fontCache[fontName] = await pdfDocObj.embedFont(fontName);
-        }
-        return fontCache[fontName];
-      };
-
-      // Loop through and stamp all overlay text items
-      for (const item of overlays) {
-        if (item.pageIndex >= pages.length) continue;
-        
-        const targetPage = pages[item.pageIndex];
-        const { width, height } = targetPage.getSize();
-
-        // Convert percentage page positions to PDF coordinate points
-        const pdfX = (item.x / 100) * width;
-        
-        // Font size height offset
-        const pdfY = height - ((item.y / 100) * height) - item.fontSize;
-
-        const embeddedFont = await getEmbeddedFont(item.fontFamily, item.isBold, item.isItalic);
-
-        targetPage.drawText(item.text, {
-          x: pdfX,
-          y: pdfY,
-          size: item.fontSize,
-          font: embeddedFont,
-          color: hexToPdfRgb(item.color)
-        });
       }
 
       const pdfBytes = await pdfDocObj.save();
@@ -300,8 +417,8 @@ export default function EditTool() {
       setProcessedBlob(blob);
       setProcessing(false);
     } catch (err) {
-      console.error("Text stamping compilation error:", err);
-      alert("Failed to render text layers onto PDF.");
+      console.error("Canvas drawing compilation error:", err);
+      alert("Failed to render drawings onto PDF.");
       setModalOpen(false);
       setProcessing(false);
     }
@@ -313,9 +430,7 @@ export default function EditTool() {
     downloadFile(processedBlob, `${name}_edited.pdf`);
   };
 
-  const selectedOverlay = overlays.find((o) => o.id === selectedOverlayId);
-  const activeOverlays = overlays.filter((o) => o.pageIndex === activePage);
-
+  // leftPane elements mapping
   const leftPane = files.length > 0 ? (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '1rem' }}>
       
@@ -325,9 +440,8 @@ export default function EditTool() {
           className="rotate-card-btn" 
           disabled={activePage === 0} 
           onClick={() => {
+            saveCurrentPageState();
             setActivePage(prev => prev - 1);
-            setSelectedOverlayId(null);
-            setEditingOverlayId(null);
           }}
           type="button"
         >
@@ -340,9 +454,8 @@ export default function EditTool() {
           className="rotate-card-btn" 
           disabled={activePage === totalPages - 1} 
           onClick={() => {
+            saveCurrentPageState();
             setActivePage(prev => prev + 1);
-            setSelectedOverlayId(null);
-            setEditingOverlayId(null);
           }}
           type="button"
         >
@@ -352,8 +465,6 @@ export default function EditTool() {
 
       {/* Editor viewport page */}
       <div 
-        id="edit-page-viewport"
-        ref={viewportRef}
         style={{
           position: 'relative',
           display: 'inline-block',
@@ -364,87 +475,14 @@ export default function EditTool() {
           lineHeight: 0
         }}
       >
-        {loadingPage ? (
-          <div style={{ width: '400px', height: '560px', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#151529' }}>
+        {loadingPage && (
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(21, 21, 41, 0.6)', zIndex: 15 }}>
             <div className="modal-spinner" style={{ width: '32px', height: '32px', borderWidth: '3px' }}></div>
           </div>
-        ) : (
-          <>
-            <img 
-              src={pageImg} 
-              alt={`Page ${activePage + 1}`} 
-              style={{ display: 'block', maxWidth: '100%', height: 'auto', pointerEvents: 'none' }} 
-            />
-            
-            {/* Render overlay inputs dynamically */}
-            {activeOverlays.map((item) => {
-              const isSelected = selectedOverlayId === item.id;
-              const isEditing = editingOverlayId === item.id;
-
-              return (
-                <div
-                  key={item.id}
-                  onMouseDown={(e) => handleOverlayMouseDown(e, item.id)}
-                  onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    setEditingOverlayId(item.id);
-                  }}
-                  style={{
-                    position: 'absolute',
-                    left: `${item.x}%`,
-                    top: `${item.y}%`,
-                    cursor: isEditing ? 'text' : 'move',
-                    border: isSelected ? '1px dashed var(--primary-color)' : '1px solid transparent',
-                    backgroundColor: isSelected ? 'rgba(255, 71, 87, 0.05)' : 'transparent',
-                    padding: '2px 6px',
-                    borderRadius: '2px',
-                    zIndex: isSelected ? 10 : 5,
-                    userSelect: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                >
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={item.text}
-                      onChange={(e) => updateSelectedOverlay('text', e.target.value)}
-                      onBlur={() => setEditingOverlayId(null)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') setEditingOverlayId(null);
-                      }}
-                      autoFocus
-                      style={{
-                        background: '#ffffff',
-                        border: '1px solid var(--primary-color)',
-                        color: '#000000',
-                        fontFamily: getCssFontFamily(item.fontFamily),
-                        fontSize: `${item.fontSize}px`,
-                        fontWeight: item.isBold ? 'bold' : 'normal',
-                        fontStyle: item.isItalic ? 'italic' : 'normal',
-                        padding: '1px 4px',
-                        outline: 'none'
-                      }}
-                      onMouseDown={(e) => e.stopPropagation()} // Prevent dragging active input
-                    />
-                  ) : (
-                    <span
-                      style={{
-                        fontFamily: getCssFontFamily(item.fontFamily),
-                        fontSize: `${item.fontSize}px`,
-                        color: item.color,
-                        fontWeight: item.isBold ? 'bold' : 'normal',
-                        fontStyle: item.isItalic ? 'italic' : 'normal',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {item.text}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </>
         )}
+        
+        {/* Fabric Canvas Element */}
+        <canvas ref={canvasRef} />
       </div>
     </div>
   ) : null;
@@ -464,23 +502,46 @@ export default function EditTool() {
         leftPane={leftPane}
       >
         <div>
-          <h3 className="options-title">Page Editing Overlays</h3>
+          <h3 className="options-title">Editor Toolbox</h3>
 
-          {/* Core overlay creation trigger */}
-          <div className="options-group" style={{ marginBottom: '1.25rem' }}>
+          {/* Segmented controls representing active tool modes */}
+          <div className="segment-control" style={{ marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
             <button
               type="button"
-              className="btn-secondary"
-              onClick={addTextOverlay}
-              style={{ width: '100%' }}
+              className={`segment-btn ${activeTool === 'select' ? 'active' : ''}`}
+              onClick={() => handleToolSelect('select')}
+              title="Select & Arrange"
             >
-              <Plus size={16} />
-              Add Text Label
+              <MousePointer size={16} style={{ margin: 'auto' }} />
+            </button>
+            <button
+              type="button"
+              className={`segment-btn ${activeTool === 'text' ? 'active' : ''}`}
+              onClick={() => handleToolSelect('text')}
+              title="Add Text overlay"
+            >
+              <Type size={16} style={{ margin: 'auto' }} />
+            </button>
+            <button
+              type="button"
+              className={`segment-btn ${activeTool === 'whiteout' ? 'active' : ''}`}
+              onClick={() => handleToolSelect('whiteout')}
+              title="Whiteout (Erase)"
+            >
+              <Square size={16} style={{ margin: 'auto' }} />
+            </button>
+            <button
+              type="button"
+              className={`segment-btn ${activeTool === 'draw' ? 'active' : ''}`}
+              onClick={() => toggleDrawingMode()}
+              title="Freehand Draw"
+            >
+              <PenTool size={16} style={{ margin: 'auto' }} />
             </button>
           </div>
 
-          {/* Active selected label configurations panels */}
-          {selectedOverlay ? (
+          {/* Freehand Pen Configurations */}
+          {activeTool === 'draw' && (
             <div style={{
               background: 'rgba(255,255,255,0.02)',
               border: '1px solid var(--border-color)',
@@ -488,148 +549,64 @@ export default function EditTool() {
               padding: '1rem',
               display: 'flex',
               flexDirection: 'column',
-              gap: '1rem'
+              gap: '1rem',
+              marginBottom: '1rem'
             }}>
               <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>
-                Label Settings
+                Freehand Pen Styles
               </span>
 
-              {/* Text content modifier */}
-              <div>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
-                  Text Content
-                </label>
-                <input
-                  type="text"
-                  value={selectedOverlay.text}
-                  onChange={(e) => updateSelectedOverlay('text', e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem',
-                    borderRadius: '4px',
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: 'rgba(7,7,20,0.8)',
-                    color: 'var(--text-main)',
-                    fontSize: '0.85rem'
-                  }}
-                />
-              </div>
-
-              {/* Font size modification slider */}
+              {/* Brush width slider */}
               <div>
                 <label style={{ display: 'flex', justifyContent: 'between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-                  <span>Font Size</span>
-                  <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>{selectedOverlay.fontSize}px</span>
+                  <span>Line Thickness</span>
+                  <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>{brushWidth}px</span>
                 </label>
                 <input
                   type="range"
-                  min="12"
-                  max="48"
-                  value={selectedOverlay.fontSize}
-                  onChange={(e) => updateSelectedOverlay('fontSize', parseInt(e.target.value))}
+                  min="1"
+                  max="20"
+                  value={brushWidth}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setBrushWidth(val);
+                    const canvas = fabricCanvasRef.current;
+                    if (canvas && canvas.isDrawingMode) {
+                      canvas.freeDrawingBrush.width = val;
+                    }
+                  }}
                   style={{ width: '100%' }}
                 />
               </div>
 
-              {/* Font Family Selection */}
+              {/* Brush color list */}
               <div>
                 <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
-                  Font Family
-                </label>
-                <select
-                  value={selectedOverlay.fontFamily || 'Helvetica'}
-                  onChange={(e) => updateSelectedOverlay('fontFamily', e.target.value)}
-                  className="options-select"
-                  style={{
-                    padding: '0.6rem',
-                    borderRadius: '4px',
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: 'rgba(7,7,20,0.8)',
-                    color: 'var(--text-main)',
-                    fontSize: '0.85rem'
-                  }}
-                >
-                  <option value="Helvetica">Helvetica</option>
-                  <option value="Times Roman">Times New Roman</option>
-                  <option value="Courier">Courier</option>
-                </select>
-              </div>
-
-              {/* Text Formatting Controls */}
-              <div>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
-                  Text Styling
-                </label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => updateSelectedOverlay('isBold', !selectedOverlay.isBold)}
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0.6rem',
-                      borderRadius: 'var(--border-radius-md)',
-                      backgroundColor: selectedOverlay.isBold ? 'var(--primary-color)' : 'rgba(255,255,255,0.05)',
-                      border: '1px solid var(--border-color)',
-                      color: 'white',
-                      cursor: 'pointer',
-                      transition: 'var(--transition-smooth)'
-                    }}
-                  >
-                    <Bold size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateSelectedOverlay('isItalic', !selectedOverlay.isItalic)}
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0.6rem',
-                      borderRadius: 'var(--border-radius-md)',
-                      backgroundColor: selectedOverlay.isItalic ? 'var(--secondary-color)' : 'rgba(255,255,255,0.05)',
-                      border: '1px solid var(--border-color)',
-                      color: 'white',
-                      cursor: 'pointer',
-                      transition: 'var(--transition-smooth)'
-                    }}
-                  >
-                    <Italic size={16} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Color list palette picker */}
-              <div>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
-                  Text Color
+                  Pen Color
                 </label>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  {['#000000', '#ff4757', '#0000b3', '#2ed573', '#ffa502', '#ffffff'].map((c) => (
+                  {['#ff4757', '#0000b3', '#2ed573', '#ffa502', '#ffffff', '#000000'].map((c) => (
                     <button
                       key={c}
                       type="button"
-                      onClick={() => updateSelectedOverlay('color', c)}
+                      onClick={() => updateBrushColor(c)}
                       style={{
                         width: '20px',
                         height: '20px',
                         borderRadius: '50%',
                         backgroundColor: c,
-                        border: selectedOverlay.color === c ? '2px solid white' : '1px solid rgba(255,255,255,0.1)',
+                        border: brushColor === c ? '2px solid white' : '1px solid rgba(255,255,255,0.1)',
                         cursor: 'pointer'
                       }}
                     ></button>
                   ))}
                   
-                  {/* Custom color picker input */}
+                  {/* Custom Brush Color Picker */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginLeft: '0.25rem' }}>
                     <input
                       type="color"
-                      value={['#000000', '#ff4757', '#0000b3', '#2ed573', '#ffa502', '#ffffff'].includes(selectedOverlay.color) ? '#ff4757' : selectedOverlay.color}
-                      onChange={(e) => updateSelectedOverlay('color', e.target.value)}
+                      value={brushColor}
+                      onChange={(e) => updateBrushColor(e.target.value)}
                       style={{
                         border: 'none',
                         background: 'none',
@@ -643,30 +620,185 @@ export default function EditTool() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Deletion trigger */}
+          {/* Active selection configuration panels */}
+          {selectedType ? (
+            <div style={{
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius-md)',
+              padding: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem'
+            }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--primary-color)' }}>
+                {selectedType === 'i-text' ? 'Text Settings' : 'Object Settings'}
+              </span>
+
+              {/* Text-specific configuration options */}
+              {selectedType === 'i-text' && (
+                <>
+                  {/* Font Family selector */}
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
+                      Font Family
+                    </label>
+                    <select
+                      value={selectedFontFamily}
+                      onChange={(e) => updateActiveObject('fontFamily', e.target.value)}
+                      className="options-select"
+                      style={{
+                        padding: '0.6rem',
+                        borderRadius: '4px',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: 'rgba(7,7,20,0.8)',
+                        color: 'var(--text-main)',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      <option value="Helvetica">Helvetica</option>
+                      <option value="Times Roman">Times New Roman</option>
+                      <option value="Courier">Courier</option>
+                    </select>
+                  </div>
+
+                  {/* Font Size slider */}
+                  <div>
+                    <label style={{ display: 'flex', justifyContent: 'between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                      <span>Font Size</span>
+                      <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>{selectedFontSize}px</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="12"
+                      max="72"
+                      value={selectedFontSize}
+                      onChange={(e) => updateActiveObject('fontSize', parseInt(e.target.value))}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+
+                  {/* Font formatting B / I */}
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
+                      Text Styling
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => updateActiveObject('isBold', !selectedIsBold)}
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '0.6rem',
+                          borderRadius: 'var(--border-radius-md)',
+                          backgroundColor: selectedIsBold ? 'var(--primary-color)' : 'rgba(255,255,255,0.05)',
+                          border: '1px solid var(--border-color)',
+                          color: 'white',
+                          cursor: 'pointer',
+                          transition: 'var(--transition-smooth)'
+                        }}
+                      >
+                        <Bold size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateActiveObject('isItalic', !selectedIsItalic)}
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '0.6rem',
+                          borderRadius: 'var(--border-radius-md)',
+                          backgroundColor: selectedIsItalic ? 'var(--secondary-color)' : 'rgba(255,255,255,0.05)',
+                          border: '1px solid var(--border-color)',
+                          color: 'white',
+                          cursor: 'pointer',
+                          transition: 'var(--transition-smooth)'
+                        }}
+                      >
+                        <Italic size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Color configurations (Except for paths/drawings which are baked) */}
+              {selectedType !== 'path' && (
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
+                    {selectedType === 'rect' ? 'Fill Color' : 'Text Color'}
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {['#ff4757', '#0000b3', '#2ed573', '#ffa502', '#ffffff', '#000000'].map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => updateActiveObject('fill', c)}
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '50%',
+                          backgroundColor: c,
+                          border: selectedColor === c ? '2px solid white' : '1px solid rgba(255,255,255,0.1)',
+                          cursor: 'pointer'
+                        }}
+                      ></button>
+                    ))}
+                    
+                    {/* Custom Object Color Picker */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginLeft: '0.25rem' }}>
+                      <input
+                        type="color"
+                        value={['#ff4757', '#0000b3', '#2ed573', '#ffa502', '#ffffff', '#000000'].includes(selectedColor) ? '#ff4757' : selectedColor}
+                        onChange={(e) => updateActiveObject('fill', e.target.value)}
+                        style={{
+                          border: 'none',
+                          background: 'none',
+                          width: '24px',
+                          height: '24px',
+                          cursor: 'pointer',
+                          padding: 0
+                        }}
+                      />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Custom</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Deletion action */}
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={deleteSelectedOverlay}
+                onClick={deleteActiveObject}
                 style={{ width: '100%', color: 'var(--error-color)', borderColor: 'rgba(255,107,129,0.2)', padding: '0.5rem', marginTop: '0.5rem' }}
               >
                 <Trash2 size={12} />
-                Delete Text Label
+                Delete Selected Object
               </button>
             </div>
           ) : (
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-              Add a text label to the page, double-click it to type inline, and drag it to any position on the preview.
-            </p>
+            activeTool !== 'draw' && (
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                Use the toolbox above to draw paths, erase sections (whiteout blocks), or add text overlays. Click objects on the preview to select, scale, rotate, or reconfigure them.
+              </p>
+            )
           )}
         </div>
       </Workspace>
 
       <ProgressModal
         isOpen={modalOpen}
-        title="Compiling PDF Edits..."
-        description="Encoding Helvetica font metrics, generating visual text grids, and stamping PDF coordinates..."
+        title="Compiling PDF Drawings..."
+        description="Extracting transparent graphics overlays, executing high-resolution scales, and baking vector lines..."
         isComplete={!!processedBlob}
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
