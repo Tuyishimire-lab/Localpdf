@@ -3,6 +3,10 @@ export default function sitemap() {
   
   const routes = [
     '',
+    '/about',
+    '/contact',
+    '/privacy',
+    '/terms',
     '/tools/compress',
     '/tools/jpg-to-pdf',
     '/tools/merge',
@@ -16,10 +20,19 @@ export default function sitemap() {
     '/tools/watermark',
   ];
 
-  return routes.map((route) => ({
-    url: `${baseUrl}${route}`,
-    lastModified: new Date(),
-    changeFrequency: 'monthly',
-    priority: route === '' ? 1.0 : 0.8,
-  }));
+  return routes.map((route) => {
+    let priority = 0.8;
+    if (route === '') {
+      priority = 1.0;
+    } else if (['/about', '/contact', '/privacy', '/terms'].includes(route)) {
+      priority = 0.5;
+    }
+
+    return {
+      url: `${baseUrl}${route}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: priority,
+    };
+  });
 }
