@@ -41,6 +41,30 @@ export default function EditTool() {
   const [canvasState, setCanvasState] = useState({}); // { [pageIndex]: JSON }
 
   // Tool states
+  const [zoom, setZoom] = useState(1.0);
+  const zoomRef = useRef(1.0);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  const handleZoomChange = (newZoom) => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas) return;
+
+    const clampedZoom = Math.min(Math.max(newZoom, 0.5), 3.0);
+    setZoom(clampedZoom);
+
+    canvas.setZoom(clampedZoom);
+    
+    if (canvas.backgroundImage) {
+      canvas.setDimensions({
+        width: canvas.backgroundImage.width * clampedZoom,
+        height: canvas.backgroundImage.height * clampedZoom
+      });
+    }
+    canvas.renderAll();
+  };
+
   const [activeTool, setActiveTool] = useState('select'); // select, text, whiteout, draw
   const [brushColor, setBrushColor] = useState('#ff4757');
   const [brushWidth, setBrushWidth] = useState(4);
@@ -139,7 +163,9 @@ export default function EditTool() {
     setActiveTool('select');
 
     fabricLib.Image.fromURL(pageImg, (img) => {
-      canvas.setDimensions({ width: img.width, height: img.height });
+      const activeZoom = zoomRef.current;
+      canvas.setDimensions({ width: img.width * activeZoom, height: img.height * activeZoom });
+      canvas.setZoom(activeZoom);
       
       canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
         scaleX: 1,
@@ -366,6 +392,16 @@ export default function EditTool() {
         allPagesState[activePage] = fabricCanvasRef.current.toJSON();
       }
 
+      const canvas = fabricCanvasRef.current;
+      if (!canvas) throw new Error("Canvas not initialized");
+
+      // Save original canvas configurations to restore later
+      const originalBg = canvas.backgroundImage;
+      const originalZoom = canvas.getZoom();
+      const originalWidth = canvas.getWidth();
+      const originalHeight = canvas.getHeight();
+      const originalObjectsJson = canvas.toJSON();
+
       // Loop and project transparent drawings over target PDF pages
       for (let i = 0; i < pages.length; i++) {
         const pageState = allPagesState[i];
@@ -375,28 +411,25 @@ export default function EditTool() {
           const targetPage = pages[i];
           const { width, height } = targetPage.getSize();
 
-          // Create temporary programmatic canvas matching the source dimensions
-          const tempEl = document.createElement('canvas');
-          tempEl.width = width * 2.5; // multiplier for crisp render
-          tempEl.height = height * 2.5;
-
-          const tempCanvas = new fabricLib.Canvas(tempEl);
-
+          // Load the target page state onto the canvas
           await new Promise((resolve) => {
-            tempCanvas.loadFromJSON(pageState, () => {
-              // Strip background image so only annotations remain
-              tempCanvas.setBackgroundImage(null, tempCanvas.renderAll.bind(tempCanvas));
+            canvas.loadFromJSON(pageState, () => {
+              // Reset zoom and dimensions to raw values for pixel-perfect coordinates export
+              canvas.setZoom(1.0);
+              if (pageState.width && pageState.height) {
+                canvas.setDimensions({ width: pageState.width, height: pageState.height });
+              }
+              // Hide background image
+              canvas.setBackgroundImage(null, canvas.renderAll.bind(canvas));
               resolve();
             });
           });
 
-          // Render isolated drawings as transparent high-res PNG
-          const overlayDataUrl = tempCanvas.toDataURL({
+          // Render isolated drawings as transparent high-res PNG (multiplier: 3.0 for crispness)
+          const overlayDataUrl = canvas.toDataURL({
             format: 'png',
-            multiplier: 2.5
+            multiplier: 3.0
           });
-
-          tempCanvas.dispose();
 
           // Embed drawing overlay PNG
           const imageBytes = await fetch(overlayDataUrl).then((res) => res.arrayBuffer());
@@ -411,6 +444,16 @@ export default function EditTool() {
           });
         }
       }
+
+      // Restore the active page canvas state, zoom, background and dimensions
+      await new Promise((resolve) => {
+        canvas.loadFromJSON(originalObjectsJson, () => {
+          canvas.setZoom(originalZoom);
+          canvas.setDimensions({ width: originalWidth, height: originalHeight });
+          canvas.setBackgroundImage(originalBg, canvas.renderAll.bind(canvas));
+          resolve();
+        });
+      });
 
       const pdfBytes = await pdfDocObj.save();
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
@@ -434,8 +477,8 @@ export default function EditTool() {
   const leftPane = files.length > 0 ? (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '1rem' }}>
       
-      {/* Navigator controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(7,7,20,0.8)', padding: '0.5rem 1rem', borderRadius: 'var(--border-radius-md)' }}>
+      {/* Navigator & Zoom controls */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(7,7,20,0.8)', padding: '0.5rem 1rem', borderRadius: 'var(--border-radius-md)', flexWrap: 'wrap', justifyContent: 'center' }}>
         <button 
           className="rotate-card-btn" 
           disabled={activePage === 0} 
@@ -447,7 +490,7 @@ export default function EditTool() {
         >
           <ChevronLeft size={16} />
         </button>
-        <span style={{ fontSize: '0.9rem', fontWeight: '700' }}>
+        <span style={{ fontSize: '0.9rem', fontWeight: '700', minWidth: '70px', textAlign: 'center' }}>
           Page {activePage + 1} of {totalPages}
         </span>
         <button 
@@ -461,29 +504,83 @@ export default function EditTool() {
         >
           <ChevronRight size={16} />
         </button>
+
+        {/* Vertical Divider */}
+        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }}></div>
+
+        {/* Zoom controls */}
+        <button 
+          className="rotate-card-btn"
+          onClick={() => handleZoomChange(zoom - 0.2)}
+          disabled={zoom <= 0.6}
+          title="Zoom Out"
+          type="button"
+          style={{ width: '28px', height: '28px', fontSize: '1.2rem', padding: 0 }}
+        >
+          -
+        </button>
+        <span style={{ fontSize: '0.85rem', fontWeight: '700', minWidth: '45px', textAlign: 'center' }}>
+          {Math.round(zoom * 100)}%
+        </span>
+        <button 
+          className="rotate-card-btn"
+          onClick={() => handleZoomChange(zoom + 0.2)}
+          disabled={zoom >= 3.0}
+          title="Zoom In"
+          type="button"
+          style={{ width: '28px', height: '28px', fontSize: '1.2rem', padding: 0 }}
+        >
+          +
+        </button>
+        <button 
+          className="rotate-card-btn"
+          style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+          onClick={() => handleZoomChange(1.0)}
+          title="Reset Zoom"
+          type="button"
+        >
+          Reset
+        </button>
       </div>
 
-      {/* Editor viewport page */}
-      <div 
+      {/* Scrollable grid wrapper for zoomed document canvas */}
+      <div
         style={{
-          position: 'relative',
-          display: 'inline-block',
-          boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-          borderRadius: '4px',
-          border: '1px solid rgba(255,255,255,0.08)',
-          backgroundColor: '#ffffff',
-          lineHeight: 0
+          width: '100%',
+          maxWidth: '850px',
+          maxHeight: '68vh',
+          overflow: 'auto',
+          border: '1px solid var(--border-color)',
+          borderRadius: '8px',
+          backgroundColor: 'rgba(7,7,20,0.6)',
+          backdropFilter: 'blur(10px)',
+          padding: '1.5rem',
+          display: 'grid',
+          placeItems: 'center'
         }}
       >
-        {loadingPage && (
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(21, 21, 41, 0.6)', zIndex: 15 }}>
-            <div className="modal-spinner" style={{ width: '32px', height: '32px', borderWidth: '3px' }}></div>
+        {/* Editor viewport page */}
+        <div 
+          style={{
+            position: 'relative',
+            display: 'inline-block',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+            borderRadius: '4px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            backgroundColor: '#ffffff',
+            lineHeight: 0
+          }}
+        >
+          {loadingPage && (
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(21, 21, 41, 0.6)', zIndex: 15 }}>
+              <div className="modal-spinner" style={{ width: '32px', height: '32px', borderWidth: '3px' }}></div>
+            </div>
+          )}
+          
+          {/* Stable wrapper container for the canvas */}
+          <div>
+            <canvas ref={canvasRef} />
           </div>
-        )}
-        
-        {/* Stable wrapper container for the canvas */}
-        <div>
-          <canvas ref={canvasRef} />
         </div>
       </div>
     </div>
