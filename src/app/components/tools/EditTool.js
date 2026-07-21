@@ -38,7 +38,30 @@ export default function EditTool() {
   const fabricCanvasRef = useRef(null);
   const prevPageRef = useRef(0);
   const [fabricLib, setFabricLib] = useState(null);
-  const [canvasState, setCanvasState] = useState({}); // { [pageIndex]: JSON }
+  const [canvasObjects, setCanvasObjects] = useState({}); // { [pageIndex]: { objects: [], width: number, height: number } }
+  const canvasObjectsRef = useRef({});
+  useEffect(() => {
+    canvasObjectsRef.current = canvasObjects;
+  }, [canvasObjects]);
+
+  // Prevent global CSS resets (like canvas { max-width: 100%; }) from corrupting Fabric's layout sizes
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .canvas-container {
+        max-width: none !important;
+        max-height: none !important;
+      }
+      .lower-canvas, .upper-canvas {
+        max-width: none !important;
+        max-height: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // Tool states
   const [zoom, setZoom] = useState(1.0);
@@ -147,13 +170,19 @@ export default function EditTool() {
     const canvas = fabricCanvasRef.current;
     if (!canvas || !pageImg || !fabricLib) return;
 
-    // Save previous active page state to JSON
+    // Save previous active page state to React state before switching
     if (prevPageRef.current !== activePage) {
       const prevIndex = prevPageRef.current;
-      setCanvasState((prev) => ({
+      
+      const objects = canvas.getObjects().map(obj => obj.toObject());
+      const rawWidth = canvas.backgroundImage ? canvas.backgroundImage.width : canvas.width / zoomRef.current;
+      const rawHeight = canvas.backgroundImage ? canvas.backgroundImage.height : canvas.height / zoomRef.current;
+
+      setCanvasObjects((prev) => ({
         ...prev,
-        [prevIndex]: canvas.toJSON()
+        [prevIndex]: { objects, width: rawWidth, height: rawHeight }
       }));
+      
       prevPageRef.current = activePage;
     }
 
@@ -164,7 +193,8 @@ export default function EditTool() {
 
     fabricLib.Image.fromURL(pageImg, (img) => {
       const activeZoom = zoomRef.current;
-      canvas.setDimensions({ width: img.width * activeZoom, height: img.height * activeZoom });
+      canvas.setWidth(img.width * activeZoom);
+      canvas.setHeight(img.height * activeZoom);
       canvas.setZoom(activeZoom);
       
       canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas), {
@@ -172,10 +202,13 @@ export default function EditTool() {
         scaleY: 1
       });
 
-      // Load saved annotation state if it exists
-      const savedState = canvasState[activePage];
-      if (savedState) {
-        canvas.loadFromJSON(savedState, () => {
+      // Restore saved objects if they exist
+      const savedData = canvasObjectsRef.current[activePage];
+      if (savedData && savedData.objects && savedData.objects.length > 0) {
+        fabricLib.util.enlivenObjects(savedData.objects, (enlivenedObjects) => {
+          enlivenedObjects.forEach((obj) => {
+            canvas.add(obj);
+          });
           canvas.renderAll();
         });
       }
@@ -239,9 +272,14 @@ export default function EditTool() {
   const saveCurrentPageState = () => {
     const canvas = fabricCanvasRef.current;
     if (!canvas) return;
-    setCanvasState((prev) => ({
+
+    const objects = canvas.getObjects().map(obj => obj.toObject());
+    const rawWidth = canvas.backgroundImage ? canvas.backgroundImage.width : canvas.width / zoom;
+    const rawHeight = canvas.backgroundImage ? canvas.backgroundImage.height : canvas.height / zoom;
+
+    setCanvasObjects((prev) => ({
       ...prev,
-      [activePage]: canvas.toJSON()
+      [activePage]: { objects, width: rawWidth, height: rawHeight }
     }));
   };
 
@@ -252,7 +290,7 @@ export default function EditTool() {
     setFiles([targetFile]);
     setActivePage(0);
     prevPageRef.current = 0;
-    setCanvasState({});
+    setCanvasObjects({});
     setProcessedBlob(null);
 
     try {
@@ -273,7 +311,7 @@ export default function EditTool() {
     setActivePage(0);
     prevPageRef.current = 0;
     setPageImg(null);
-    setCanvasState({});
+    setCanvasObjects({});
     setProcessedBlob(null);
     setSelectedType(null);
   };
@@ -387,49 +425,52 @@ export default function EditTool() {
       const pages = pdfDocObj.getPages();
 
       // Combined state map including live unsaved modifications
-      const allPagesState = { ...canvasState };
+      const allPagesData = { ...canvasObjectsRef.current };
       if (fabricCanvasRef.current) {
-        allPagesState[activePage] = fabricCanvasRef.current.toJSON();
+        const canvas = fabricCanvasRef.current;
+        const objects = canvas.getObjects().map(obj => obj.toObject());
+        const rawWidth = canvas.backgroundImage ? canvas.backgroundImage.width : canvas.width / zoom;
+        const rawHeight = canvas.backgroundImage ? canvas.backgroundImage.height : canvas.height / zoom;
+        allPagesData[activePage] = { objects, width: rawWidth, height: rawHeight };
       }
 
-      const canvas = fabricCanvasRef.current;
-      if (!canvas) throw new Error("Canvas not initialized");
-
-      // Save original canvas configurations to restore later
-      const originalBg = canvas.backgroundImage;
-      const originalZoom = canvas.getZoom();
-      const originalWidth = canvas.getWidth();
-      const originalHeight = canvas.getHeight();
-      const originalObjectsJson = canvas.toJSON();
-
-      // Loop and project transparent drawings over target PDF pages
+      // Loop and project transparent drawings over target PDF pages (using a dedicated headless element)
       for (let i = 0; i < pages.length; i++) {
-        const pageState = allPagesState[i];
-        const hasObjects = pageState && pageState.objects && pageState.objects.length > 0;
+        const pageData = allPagesData[i];
+        const hasObjects = pageData && pageData.objects && pageData.objects.length > 0;
 
         if (hasObjects) {
           const targetPage = pages[i];
-          const { width, height } = targetPage.getSize();
+          const { width: pdfPageWidth, height: pdfPageHeight } = targetPage.getSize();
 
-          // Load the target page state onto the canvas
+          // We want to render the page overlays on a headless canvas of the target dimensions
+          const targetWidth = pageData.width || pdfPageWidth * 1.2;
+          const targetHeight = pageData.height || pdfPageHeight * 1.2;
+
+          const tempEl = document.createElement('canvas');
+          tempEl.width = targetWidth;
+          tempEl.height = targetHeight;
+
+          const tempCanvas = new fabricLib.Canvas(tempEl);
+
+          // Load the enlivened objects onto the temp canvas
           await new Promise((resolve) => {
-            canvas.loadFromJSON(pageState, () => {
-              // Reset zoom and dimensions to raw values for pixel-perfect coordinates export
-              canvas.setZoom(1.0);
-              if (pageState.width && pageState.height) {
-                canvas.setDimensions({ width: pageState.width, height: pageState.height });
-              }
-              // Hide background image
-              canvas.setBackgroundImage(null, canvas.renderAll.bind(canvas));
+            fabricLib.util.enlivenObjects(pageData.objects, (enlivenedObjects) => {
+              enlivenedObjects.forEach((obj) => {
+                tempCanvas.add(obj);
+              });
+              tempCanvas.renderAll();
               resolve();
             });
           });
 
-          // Render isolated drawings as transparent high-res PNG (multiplier: 3.0 for crispness)
-          const overlayDataUrl = canvas.toDataURL({
+          // Export the transparent overlay at 2.5x multiplier for crispness (resolution matched to PDF points)
+          const overlayDataUrl = tempCanvas.toDataURL({
             format: 'png',
-            multiplier: 3.0
+            multiplier: 2.5
           });
+
+          tempCanvas.dispose();
 
           // Embed drawing overlay PNG
           const imageBytes = await fetch(overlayDataUrl).then((res) => res.arrayBuffer());
@@ -439,21 +480,11 @@ export default function EditTool() {
           targetPage.drawImage(embeddedImage, {
             x: 0,
             y: 0,
-            width: width,
-            height: height
+            width: pdfPageWidth,
+            height: pdfPageHeight
           });
         }
       }
-
-      // Restore the active page canvas state, zoom, background and dimensions
-      await new Promise((resolve) => {
-        canvas.loadFromJSON(originalObjectsJson, () => {
-          canvas.setZoom(originalZoom);
-          canvas.setDimensions({ width: originalWidth, height: originalHeight });
-          canvas.setBackgroundImage(originalBg, canvas.renderAll.bind(canvas));
-          resolve();
-        });
-      });
 
       const pdfBytes = await pdfDocObj.save();
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
