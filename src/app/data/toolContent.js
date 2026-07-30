@@ -434,6 +434,146 @@ When you are satisfied with the page arrangement, saving generates a new PDF con
       { q: 'Can I add blank pages between existing pages?', a: 'Yes. Use the "Insert Blank Page" feature to add an empty white page at any position in the document, useful for spacers in formatted reports or booklets.' },
     ],
   },
+
+  'pdf-to-word': {
+    title: 'PDF to Word Converter',
+    description: `Converting a PDF to an editable Word document is one of the most requested document operations in business and academic settings. When you receive a PDF report, contract, or form that needs editing, LocalPDF PDF to Word gives you a fast, private way to extract the content and continue working in Microsoft Word or Google Docs without any uploads or subscriptions.
+
+LocalPDF uses pdfjs-dist to extract text positions and structure from your PDF, then rebuilds the content as a properly formatted .docx file using the open docx specification. The entire process runs in your browser, so your document data never leaves your device. This makes it suitable for sensitive documents like legal contracts, financial reports, and personal records.
+
+Best results are achieved on digitally-created PDFs. For scanned documents, use the OCR tool first to add a text layer before converting.`,
+    howTo: [
+      'Click "Select PDF File" or drag your PDF onto the upload area.',
+      'Click "Convert to Word" and wait while the text is extracted and rebuilt.',
+      'Download your .docx file when conversion completes.',
+      'Open in Microsoft Word or Google Docs and review the output.',
+      'Make any necessary formatting corrections and save.',
+    ],
+    features: [
+      { title: 'Browser-Only Processing', description: 'Text extraction and Word document assembly both happen locally. Your PDF content is never sent to any server.' },
+      { title: 'No Account Needed', description: 'No sign-up, no subscription, no email required. Upload, convert, and download in under a minute.' },
+      { title: 'Page-by-Page Conversion', description: 'Each PDF page is converted separately and assembled into a multi-page Word document with page breaks.' },
+      { title: 'Works on Any PDF', description: 'Supports text-based and digitally-created PDFs. For scanned documents, run OCR first to add extractable text.' },
+    ],
+    faqs: [
+      { q: 'Why does the converted Word file look different from the PDF?', a: 'PDF uses fixed positioning while Word uses flowing text. The conversion extracts text content but cannot perfectly reconstruct complex layouts, multiple columns, or precisely positioned graphics.' },
+      { q: 'Can I convert a scanned PDF to Word?', a: 'Scanned PDFs contain images rather than text. Use the LocalPDF OCR tool first to add a text layer, then convert with this tool.' },
+      { q: 'Is there a page limit for conversion?', a: 'There is no imposed page limit. Very long documents will take more time to process but will complete successfully on most devices.' },
+      { q: 'Will tables be converted correctly?', a: 'Simple tables often convert as tab-separated text. Complex or merged-cell tables may require manual reconstruction in Word after conversion.' },
+      { q: 'Is my document safe to convert with this tool?', a: 'Yes. Conversion happens entirely in your browser with no server communication. Your document content is not accessible to LocalPDF.' },
+    ],
+  },
+
+  flatten: {
+    title: 'Flatten PDF',
+    description: `Flattening a PDF removes all interactive elements and merges them permanently into the page content. Form fields, annotations, text highlights, and signature placeholders become static visual elements that can no longer be edited or clicked. This is an essential step before final distribution of completed forms, signed documents, and reviewed drafts.
+
+When you receive a PDF form, fill it in, and flatten the result, the field values become part of the permanent page content. Recipients see the filled form exactly as you intended, with no ability to change the values. This also prevents the common issue where form data appears blank when a PDF is opened in a different reader application.
+
+LocalPDF's Flatten tool processes your document locally using pdf-lib. The form fields are removed and their current values are rendered as static text on each page. Your document never leaves your browser.`,
+    howTo: [
+      'Click "Select PDF File" or drag your completed form PDF onto the upload area.',
+      'Click "Flatten PDF" to begin processing.',
+      'Wait for the tool to remove form fields and lock in their values.',
+      'Download the flattened PDF to your device.',
+    ],
+    features: [
+      { title: 'Permanent Form Values', description: 'Form field values are rendered as static text. Recipients cannot change the filled values or see form field boundaries.' },
+      { title: 'Annotation Removal', description: 'Highlights, sticky notes, comment boxes, and other annotation layers are flattened into the page content.' },
+      { title: 'Universal Compatibility', description: 'Flattened PDFs open correctly in all PDF readers without requiring form support, solving cross-reader compatibility issues.' },
+      { title: 'Client-Side Processing', description: 'Your PDF form data, which may contain personal or confidential information, never leaves your device.' },
+    ],
+    faqs: [
+      { q: 'What is the difference between flattening and printing to PDF?', a: 'Printing to PDF re-renders the document through the printer driver, which can alter fonts, colors, and layout. Flattening with pdf-lib preserves the original PDF structure while only removing interactive layers.' },
+      { q: 'Can I unflatten a PDF after flattening?', a: 'No. Flattening is a one-way operation. Form fields and annotations are permanently removed. Keep a copy of the original before flattening if you need to make changes later.' },
+      { q: 'Will digital signatures be preserved after flattening?', a: 'Basic visual signature images are preserved as page content. Cryptographic digital signatures become invalid after flattening because the document content changes.' },
+      { q: 'Why should I flatten before sending a PDF form?', a: 'Unflattened forms can display differently in different PDF readers. Some readers show fields as empty if they do not support the specific form type. Flattening guarantees consistent display everywhere.' },
+    ],
+  },
+
+  compare: {
+    title: 'Compare PDF',
+    description: `Comparing two versions of a PDF document is essential for contract review, document auditing, and quality control workflows. When a contract has been revised, a report has been updated, or a design has changed, knowing exactly what is different between two versions saves significant time and prevents errors.
+
+LocalPDF's Compare tool renders both PDFs page by page and performs a pixel-accurate visual comparison. Differences are highlighted in red on a combined view, giving you an instant visual map of every change. The comparison summary shows how many pages changed and the overall percentage of content that differs.
+
+The entire comparison process runs in your browser using pdfjs-dist for rendering and a canvas-based pixel diffing algorithm. Neither document is uploaded anywhere.`,
+    howTo: [
+      'Upload the original document in the "Original Document" slot.',
+      'Upload the revised document in the "Revised Document" slot.',
+      'Click "Compare Documents" to begin the page-by-page analysis.',
+      'Review the diff results: red areas indicate changes, dimmed areas are unchanged.',
+      'Use the page navigation to review each page of the comparison.',
+    ],
+    features: [
+      { title: 'Visual Pixel Diff', description: 'Differences are highlighted in red with unchanged areas dimmed for clear contrast. Instantly see what changed and where.' },
+      { title: 'Page-by-Page Review', description: 'Navigate through each page of both documents with side-by-side original, revised, and diff views.' },
+      { title: 'Change Summary', description: 'See at a glance how many pages changed, what percentage of content differs, and how page counts compare between versions.' },
+      { title: 'No Upload Required', description: 'Both documents are loaded and compared entirely in your browser. No server sees your confidential documents.' },
+    ],
+    faqs: [
+      { q: 'How accurate is the PDF comparison?', a: 'The comparison is pixel-accurate to the rendered view. Minor rendering differences between fonts or rendering engines may show as small changes. Content differences like edited text, moved images, or changed layout are clearly visible.' },
+      { q: 'Can I compare PDFs of different page counts?', a: 'Yes. If one PDF has more pages than the other, extra pages are shown as fully different with no matching page in the other document.' },
+      { q: 'Can I compare password-protected PDFs?', a: 'Password-protected PDFs must be unlocked first. Use LocalPDF Unlock to remove the protection before comparing.' },
+      { q: 'Why are minor differences showing on pages that look the same?', a: 'Sub-pixel rendering differences can cause pixel-level changes in text anti-aliasing. These appear as very faint noise in the diff view and are not meaningful content changes.' },
+    ],
+  },
+
+  repair: {
+    title: 'Repair PDF',
+    description: `A corrupted PDF can result from an incomplete download, storage failure, file transfer error, or software crash during saving. The file exists on your device but your PDF reader refuses to open it, or opens it with missing pages, garbled text, or rendering errors.
+
+LocalPDF's Repair tool attempts to recover the document by rebuilding the PDF's internal cross-reference table and re-serializing the document structure using pdf-lib. Many common corruption types (truncated files, invalid object references, malformed xref tables) can be resolved by this process. The tool shows you a step-by-step log of what it finds and what it fixes.
+
+Repair works best on files that are partially readable. Severely corrupted files where more than 50 percent of the data is lost cannot usually be fully recovered.`,
+    howTo: [
+      'Click "Select PDF File" or drag the corrupted PDF onto the upload area.',
+      'Click "Repair PDF" to start the recovery process.',
+      'Watch the repair log for step-by-step progress information.',
+      'Download the repaired PDF and verify it opens correctly.',
+    ],
+    features: [
+      { title: 'Step-by-Step Repair Log', description: 'The tool shows exactly what it finds and fixes during repair, giving you transparency into the recovery process.' },
+      { title: 'Permissive PDF Parsing', description: 'Uses the most lenient parsing settings to read as much of the corrupted file structure as possible before rebuilding.' },
+      { title: 'Xref Table Reconstruction', description: 'Rebuilds the internal cross-reference table that indexes all PDF objects, fixing the most common cause of PDF corruption.' },
+      { title: 'Browser-Only Processing', description: 'Your potentially sensitive document is repaired locally with no server involvement.' },
+    ],
+    faqs: [
+      { q: 'What types of PDF corruption can be repaired?', a: 'The tool handles truncated files (incomplete downloads), invalid xref tables, malformed object references, and minor structural errors. Severely fragmented or overwritten data cannot be recovered.' },
+      { q: 'My PDF opens but shows blank pages, can this tool help?', a: 'Possibly. Blank pages can result from missing content streams. The repair process reconstructs object references which may restore missing content.' },
+      { q: 'The repair completed but the file still seems wrong, what now?', a: 'Try opening the repaired PDF in multiple PDF readers (Adobe Reader, browser built-in viewer, Preview on Mac). Different readers have different tolerance for structural issues.' },
+      { q: 'Is there any risk the repair will make the file worse?', a: 'No. The tool reads your original file and creates a new repaired version. Your original file is never modified.' },
+    ],
+  },
+
+  'pdf-to-excel': {
+    title: 'PDF to Excel Converter',
+    description: `Extracting data from a PDF report, statement, or table into an editable spreadsheet is a common task for analysts, accountants, and researchers. LocalPDF's PDF to Excel tool analyzes the text positions in your PDF and reconstructs table-like structures as rows and columns in an Excel spreadsheet.
+
+Each page of your PDF becomes a separate sheet in the resulting .xlsx file. The tool uses pdfjs-dist to read text item positions, groups items by their vertical position into rows, and orders them horizontally to form columns. The resulting spreadsheet can be opened in Microsoft Excel, Google Sheets, or any compatible application.
+
+This is a Beta feature. Table detection accuracy depends heavily on the source PDF's layout. Simple, well-structured tables extract reliably. Complex merged-cell tables, nested tables, or tables with inconsistent column alignment may require manual cleanup after export.`,
+    howTo: [
+      'Click "Select PDF File" or drag a PDF with tabular data onto the upload area.',
+      'Click "Extract to Excel" to begin analysis and conversion.',
+      'Wait while each page is analyzed and tables are reconstructed.',
+      'Download your .xlsx file when processing completes.',
+      'Open in Excel or Google Sheets and clean up any misaligned rows as needed.',
+    ],
+    features: [
+      { title: 'Multi-Sheet Output', description: 'Each PDF page becomes its own spreadsheet tab, keeping data organized by source page.' },
+      { title: 'Position-Based Detection', description: 'Text items are grouped into rows and columns using their X and Y coordinates in the PDF, without requiring explicit table markup.' },
+      { title: 'SheetJS Integration', description: 'Output files are generated using SheetJS (xlsx), producing fully compatible .xlsx files that open in all major spreadsheet applications.' },
+      { title: 'Beta Transparency', description: 'The Beta label means we are honest about accuracy limitations. Check your output and use the data as a starting point for further editing.' },
+    ],
+    faqs: [
+      { q: 'Why is the Excel output misaligned or has rows in the wrong order?', a: 'PDF does not have a native concept of tables. The tool infers structure from text positions, which works well for simple layouts but may misdetect complex or multi-column arrangements.' },
+      { q: 'Can I extract data from a scanned PDF?', a: 'Scanned PDFs contain images with no text data. Use LocalPDF OCR first to add a text layer, then convert to Excel.' },
+      { q: 'Why is the Beta badge shown?', a: 'Table detection from arbitrary PDFs is an inherently approximate process. We show the Beta label to set honest expectations about accuracy rather than implying perfect conversion.' },
+      { q: 'Is there a page limit?', a: 'There is no imposed page limit. Very long documents may take more time to process but will complete on most modern devices.' },
+      { q: 'My PDF has financial data — is it safe to use this tool?', a: 'Yes. All processing happens in your browser with no server uploads. Financial data in your PDF is never transmitted anywhere.' },
+    ],
+  },
 };
 
 export default toolContent;

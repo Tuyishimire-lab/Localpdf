@@ -63,9 +63,33 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  const websiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'LocalPDF',
+    url: 'https://www.uselocalpdf.com',
+    description: 'Free browser-based PDF tools. Merge, split, compress, convert, sign, and more, with 100% local processing and zero file uploads.',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: { '@type': 'EntryPoint', urlTemplate: 'https://www.uselocalpdf.com/?q={search_term_string}' },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
+  const orgJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'LocalPDF',
+    url: 'https://www.uselocalpdf.com',
+    logo: 'https://www.uselocalpdf.com/logo.png',
+    contactPoint: { '@type': 'ContactPoint', contactType: 'customer support', url: 'https://www.uselocalpdf.com/contact' },
+  };
+
   return (
     <html lang="en" className={`${outfit.variable} ${inter.variable}`} suppressHydrationWarning>
       <body>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
         <FileProvider>
           <div className="app-container">
             <Header />

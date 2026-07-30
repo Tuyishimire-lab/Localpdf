@@ -18,7 +18,7 @@ export const metadata = {
     locale: 'en_US',
     type: 'website',
   },
-  twitter: { card: 'summary', title, description, images: [`${BASE}/logo.png`] },
+  twitter: { card: 'summary_large_image', title, description, images: [`${BASE}/logo.png`] },
 };
 
 export default function Page() {

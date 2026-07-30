@@ -20,7 +20,11 @@ import {
   Upload,
   FileSearch,
   Edit3,
-  FileText
+  FileText,
+  TableProperties,
+  GitCompare,
+  Wrench,
+  LayersIcon
 } from 'lucide-react';
 
 const tools = [
@@ -128,6 +132,41 @@ const tools = [
     description: 'Convert Microsoft Word (.docx) and plain text (.txt) files into high-quality PDFs client-side.',
     icon: FileText,
     href: '/tools/word-to-pdf',
+  },
+  {
+    id: 'pdf-to-word',
+    title: 'PDF to Word',
+    description: 'Convert PDF files to editable Microsoft Word (.docx) documents entirely in your browser.',
+    icon: FileText,
+    href: '/tools/pdf-to-word',
+  },
+  {
+    id: 'pdf-to-excel',
+    title: 'PDF to Excel',
+    description: 'Extract tables and data from PDFs into Excel spreadsheets (.xlsx). Beta feature.',
+    icon: TableProperties,
+    href: '/tools/pdf-to-excel',
+  },
+  {
+    id: 'flatten',
+    title: 'Flatten PDF',
+    description: 'Remove interactive form fields and annotations, converting them to static content.',
+    icon: Layers,
+    href: '/tools/flatten',
+  },
+  {
+    id: 'compare',
+    title: 'Compare PDF',
+    description: 'Compare two PDF documents side by side and visually highlight all differences.',
+    icon: GitCompare,
+    href: '/tools/compare',
+  },
+  {
+    id: 'repair',
+    title: 'Repair PDF',
+    description: 'Attempt to recover and rebuild corrupted or damaged PDF files in your browser.',
+    icon: Wrench,
+    href: '/tools/repair',
   },
 ];
 

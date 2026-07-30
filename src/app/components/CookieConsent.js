@@ -36,8 +36,8 @@ export default function CookieConsent() {
         <div className="cookie-banner-content">
           <h4 className="cookie-banner-title">Cookie Consent & Privacy</h4>
           <p className="cookie-banner-text">
-            We use cookies to personalize content and ads, analyze our traffic, and provide a secure experience. 
-            All PDF processing is done 100% locally in your browser—your documents are never uploaded to our servers. 
+            We use cookies to personalize content and ads, analyze our traffic, and provide a secure experience.
+            All PDF processing is done 100% locally in your browser your documents are never uploaded to our servers.
             Learn more in our <Link href="/privacy" className="cookie-banner-link">Privacy Policy</Link>.
           </p>
         </div>

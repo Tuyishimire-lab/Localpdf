@@ -1,0 +1,103 @@
+﻿---
+title: "What Is OCR and How Does It Work?"
+description: "A plain-English explanation of Optical Character Recognition (OCR), what it is, how it works, and when to use it to make scanned PDFs searchable and editable."
+date: "2026-07-30"
+readTime: "8 min"
+category: "Explainer"
+---
+
+
+If you have ever received a scanned document and tried to copy text from it, only to find you cannot select anything, you have encountered a PDF without OCR. The pages look like a document, but they are really just pictures of text. OCR, Optical Character Recognition, is the technology that converts those pictures into real, selectable, searchable text.
+
+This article explains what OCR is, how the technology works, when you need it, and how to apply it to your own PDFs for free.
+
+## What Is OCR?
+
+Optical Character Recognition (OCR) is a software process that analyzes an image containing text and converts it into machine-encoded characters, the kind you can select, copy, search, and edit in a word processor.
+
+Without OCR: your scanned PDF is a collection of pixel images. The PDF viewer shows you a picture of text, but the document contains no actual text data.
+
+With OCR: the same PDF contains a real text layer invisible to you but fully accessible to your computer. You can now search for words, copy passages, use Ctrl+F to find content, and make the document accessible to screen readers.
+
+## A Brief History
+
+OCR technology dates back to the 1950s. Early systems used pattern matching, comparing each character image to a library of known character shapes. Modern OCR uses machine learning models trained on millions of characters across hundreds of languages and fonts.
+
+Google's Tesseract, originally developed at Hewlett-Packard and now maintained by Google, is one of the most widely used open-source OCR engines. LocalPDF's OCR tool uses Tesseract.js, the WebAssembly port of Tesseract that runs entirely in your browser.
+
+## How OCR Works: Step by Step
+
+Modern OCR systems follow a similar pipeline:
+
+### 1. Pre-processing
+Before recognition, the image is prepared for analysis:
+- **Deskewing:** Correct for documents scanned at a slight angle
+- **Binarization:** Convert to black-and-white to improve contrast
+- **Noise removal:** Eliminate speckles, smudges, and artifacts from scanning
+- **Line detection:** Identify text baselines to assist character recognition
+
+### 2. Segmentation
+The pre-processed image is divided into regions:
+- **Page layout analysis:** Identify columns, paragraphs, headers, and footers
+- **Line segmentation:** Separate each line of text
+- **Word segmentation:** Identify word boundaries
+- **Character segmentation:** Isolate individual characters
+
+### 3. Feature Extraction
+Each segmented character is analyzed for distinctive features, curves, angles, intersections, and proportions, that distinguish one letter from another.
+
+### 4. Classification
+A trained neural network (or in older systems, a pattern-matching library) compares the extracted features to character models and assigns a probability to each candidate character. The highest-probability character wins.
+
+### 5. Post-processing
+The raw character output is refined using language models and dictionaries. For example, if the recognition produced "Tbe" but "The" is much more common, the correction is applied. Context-aware correction dramatically improves accuracy on real-world documents.
+
+## OCR Accuracy: What Affects It?
+
+OCR accuracy ranges from near-perfect (99%+) to quite poor, depending on several factors:
+
+| Factor | Effect on Accuracy |
+|--------|-------------------|
+| Scan resolution | 300 DPI or higher gives best results; below 150 DPI is problematic |
+| Document cleanliness | Smudges, coffee stains, and handwriting reduce accuracy |
+| Font style | Standard serif and sans-serif fonts achieve highest accuracy; unusual fonts reduce it |
+| Language | Major languages (English, French, German, Spanish) achieve higher accuracy than less-represented ones |
+| Handwriting | Printed text OCR accuracy is 95-99%; cursive handwriting is 70-85% at best |
+
+## When Do You Need OCR?
+
+**When you have scanned documents.** Any document that went through a physical scanner (contracts, receipts, forms, books) needs OCR to become searchable and copyable.
+
+**When you receive image-based PDFs.** Some document workflows export PDFs as images rather than proper text-based PDFs. These look normal but contain no text data.
+
+**Before compressing scanned PDFs.** If you run OCR first, the resulting text layer compresses far better than raw image data, leading to significantly smaller file sizes.
+
+**Before merging for search purposes.** If you are building an archive of documents that you want to search later, OCR every document before merging.
+
+**For accessibility.** Screen readers require real text to function. OCR makes scanned documents accessible to visually impaired users.
+
+## How to Run OCR on a PDF for Free
+
+[LocalPDF OCR](https://www.uselocalpdf.com/tools/ocr) uses Tesseract.js to recognize text from scanned PDFs directly in your browser.
+
+1. Open [uselocalpdf.com/tools/ocr](https://www.uselocalpdf.com/tools/ocr)
+2. Upload your scanned PDF
+3. Select the language of the document
+4. Click Run OCR
+5. Download the result, a PDF with a searchable text layer
+
+The process takes 5-30 seconds per page depending on your device's speed. Because processing happens locally, there is no waiting for server queues.
+
+## Limitations to Be Aware Of
+
+**OCR is not perfect.** Expect occasional character errors, especially on poor-quality scans. Always proofread important OCR output.
+
+**Handwriting is difficult.** Standard OCR is trained on printed text. Handwritten content recognition requires specialized models.
+
+**Complex layouts can confuse segmentation.** Multi-column layouts, tables, and mixed text-and-image pages may extract text in the wrong order.
+
+**Mathematical formulas and specialized symbols** are often misrecognized. Specialized OCR tools exist for scientific and mathematical documents.
+
+## Conclusion
+
+OCR transforms static scanned images into living documents, searchable, copyable, accessible, and compressible. It is one of the most practically useful document technologies available, and modern browser-based implementations make it accessible to anyone with a web browser. If you work with scanned documents regularly, adding an OCR step to your workflow will save significant time and frustration.
