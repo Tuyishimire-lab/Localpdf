@@ -8,16 +8,20 @@ export default function sitemap() {
     '/privacy',
     '/terms',
     '/tools/compress',
+    '/tools/edit',
     '/tools/jpg-to-pdf',
     '/tools/merge',
+    '/tools/ocr',
     '/tools/organize',
     '/tools/page-numbers',
     '/tools/pdf-to-jpg',
     '/tools/protect',
     '/tools/rotate',
+    '/tools/sign',
     '/tools/split',
     '/tools/unlock',
     '/tools/watermark',
+    '/tools/word-to-pdf',
   ];
 
   return routes.map((route) => {

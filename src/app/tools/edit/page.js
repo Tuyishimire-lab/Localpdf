@@ -1,10 +1,31 @@
 import ClientPage from './ClientPage';
+import ToolContentSection from '../../components/ToolContentSection';
+
+const BASE = 'https://www.uselocalpdf.com';
+const title = 'Edit PDF Online – Add Text and Annotations Free | LocalPDF';
+const description = 'Add text overlays, annotations, and stamps to any PDF page directly in your browser. Click to place, drag to reposition. No server uploads, no account needed.';
 
 export const metadata = {
-  title: 'Edit PDF Online - Add Text & Stamps to PDF Files | LocalPDF',
-  description: 'Add text overlays, shapes, and stamps to your PDF documents. Move, resize, and edit directly on your browser securely.',
+  title,
+  description,
+  alternates: { canonical: `${BASE}/tools/edit` },
+  openGraph: {
+    title,
+    description,
+    url: `${BASE}/tools/edit`,
+    siteName: 'LocalPDF',
+    images: [{ url: `${BASE}/logo.png`, width: 800, height: 800, alt: 'LocalPDF Edit PDF' }],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: { card: 'summary', title, description, images: [`${BASE}/logo.png`] },
 };
 
 export default function Page() {
-  return <ClientPage />;
+  return (
+    <>
+      <ClientPage />
+      <ToolContentSection tool="edit" />
+    </>
+  );
 }

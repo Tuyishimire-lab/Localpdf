@@ -1,10 +1,31 @@
 import ClientPage from './ClientPage';
+import ToolContentSection from '../../components/ToolContentSection';
+
+const BASE = 'https://www.uselocalpdf.com';
+const title = 'Protect PDF Online – Password Encrypt PDF Files Free | LocalPDF';
+const description = 'Encrypt your PDF documents with owner and user passwords to restrict unauthorized access. AES encryption runs entirely in your browser with no server uploads.';
 
 export const metadata = {
-  title: 'Protect PDF Online - Encrypt PDFs with Passwords | LocalPDF',
-  description: 'Secure your PDF files by adding owner and user passwords. Encrypt files locally to restrict unauthorized access.',
+  title,
+  description,
+  alternates: { canonical: `${BASE}/tools/protect` },
+  openGraph: {
+    title,
+    description,
+    url: `${BASE}/tools/protect`,
+    siteName: 'LocalPDF',
+    images: [{ url: `${BASE}/logo.png`, width: 800, height: 800, alt: 'LocalPDF Protect PDF' }],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: { card: 'summary', title, description, images: [`${BASE}/logo.png`] },
 };
 
 export default function Page() {
-  return <ClientPage />;
+  return (
+    <>
+      <ClientPage />
+      <ToolContentSection tool="protect" />
+    </>
+  );
 }
