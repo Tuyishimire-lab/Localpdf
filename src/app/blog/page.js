@@ -1,3 +1,5 @@
+export const dynamic = 'force-static';
+
 import Link from 'next/link';
 import { getAllPosts } from '../../lib/blog';
 
@@ -33,7 +35,7 @@ export default function BlogIndex() {
       <div className="blog-header">
         <h1 className="blog-index-title">PDF Guides &amp; Resources</h1>
         <p className="blog-index-subtitle">
-          Free step-by-step guides to help you get the most out of PDF tools — from compression to security and everything in between.
+          Free step-by-step guides to help you get the most out of PDF tools from compression to security and everything in between.
         </p>
       </div>
 

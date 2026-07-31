@@ -1,3 +1,5 @@
+export const dynamic = 'force-static';
+
 export const metadata = {
   title: 'About Us | LocalPDF',
   description: 'Learn how LocalPDF operates 100% locally in your web browser using WebAssembly. Read about our mission to bring secure and free PDF editing to everyone.',

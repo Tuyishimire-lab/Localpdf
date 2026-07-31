@@ -1,3 +1,5 @@
+export const dynamic = 'force-static';
+
 export const metadata = {
   title: 'Privacy Policy | LocalPDF',
   description: 'Learn about our commitment to your privacy. LocalPDF executes all PDF edits client-side in your web browser. No files are uploaded to servers.',

@@ -181,7 +181,7 @@ export default function CompareTool() {
       {/* Upload phase */}
       {status === 'idle' && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+          <div className="compare-upload-grid-resp">
             <UploadSlot label="Original Document" file={fileA} id="fileA" onChange={handleFileA} />
             <UploadSlot label="Revised Document" file={fileB} id="fileB" onChange={handleFileB} />
           </div>
@@ -260,7 +260,7 @@ export default function CompareTool() {
           </div>
 
           {/* Canvas grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+          <div className="compare-canvas-grid-resp">
             {[
               { ref: canvasARef, label: 'Original (A)' },
               { ref: canvasBRef, label: 'Revised (B)' },

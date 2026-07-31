@@ -1,3 +1,5 @@
+export const dynamic = 'force-static';
+
 export const metadata = {
   title: 'Terms of Service | LocalPDF',
   description: 'Terms of Service for LocalPDF. Review our terms of use for client-side PDF document manipulation tools.',

@@ -8,6 +8,10 @@
  *
  * Interactive behaviour (drag-drop, tool grid, modals) lives in HomePageClient.
  */
+
+// Statically generated at build time — zero edge function invocations per visit.
+export const dynamic = 'force-static';
+
 import HomePageClient from './components/HomePageClient';
 import HomeEditorialSection from './components/HomeEditorialSection';
 

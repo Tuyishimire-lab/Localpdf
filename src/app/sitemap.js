@@ -1,5 +1,11 @@
 import { getAllPosts } from '../lib/blog';
 
+// Force static generation — sitemap is built once at deploy time, served from CDN cache.
+// No edge function is invoked per request.
+export const dynamic = 'force-static';
+
+const LAST_MODIFIED = new Date('2026-07-30').toISOString();
+
 export default function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.uselocalpdf.com';
 
@@ -53,21 +59,21 @@ export default function sitemap() {
 
   const toolEntries = toolRoutes.map(route => ({
     url: `${baseUrl}${route}`,
-    lastModified: new Date(),
+    lastModified: LAST_MODIFIED,
     changeFrequency: 'monthly',
     priority: 0.85,
   }));
 
   const staticEntries = staticRoutes.map(({ route, priority }) => ({
     url: `${baseUrl}${route}`,
-    lastModified: new Date(),
+    lastModified: LAST_MODIFIED,
     changeFrequency: route === '' ? 'weekly' : 'monthly',
     priority,
   }));
 
   const blogEntries = blogPosts.map(({ route, priority }) => ({
     url: `${baseUrl}${route}`,
-    lastModified: new Date(),
+    lastModified: LAST_MODIFIED,
     changeFrequency: 'monthly',
     priority,
   }));

@@ -1,3 +1,5 @@
+export const dynamic = 'force-static';
+
 import ClientPage from './ClientPage';
 import ToolContentSection from '../../components/ToolContentSection';
 

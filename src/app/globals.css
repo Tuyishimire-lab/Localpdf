@@ -96,6 +96,8 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  /* Required for the absolute-positioned mobile nav drawer */
+  isolation: isolate;
 }
 
 .logo-container {
@@ -158,7 +160,7 @@ html, body {
 }
 
 .dashboard-title {
-  font-size: 2.3rem;
+  font-size: clamp(1.5rem, 5vw, 2.3rem);
   font-weight: 800;
   margin-bottom: 0.75rem;
   letter-spacing: -1px;
@@ -1556,21 +1558,21 @@ html, body {
 .blog-card-title { font-size: 1.05rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; line-height: 1.4; }
 .blog-card-desc { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1rem; }
 .blog-card-meta { font-size: 0.78rem; color: var(--text-muted); display: flex; gap: 0.3rem; }
-.blog-post-container { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+.blog-post-container { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 4rem; overflow-x: hidden; }
 .blog-back-link { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text-muted); text-decoration: none; font-size: 0.875rem; margin-bottom: 1.5rem; transition: var(--transition-smooth); }
 .blog-back-link:hover { color: var(--primary-color); }
 .blog-post-header { margin-bottom: 2rem; }
 .blog-post-title { font-size: clamp(1.5rem, 4vw, 2.1rem); font-weight: 800; color: var(--text-main); margin: 0.75rem 0 0.5rem; line-height: 1.25; }
 .blog-post-meta { font-size: 0.82rem; color: var(--text-muted); display: flex; gap: 0.4rem; }
-.blog-post-content { color: var(--text-muted); line-height: 1.8; font-size: 0.95rem; }
+.blog-post-content { color: var(--text-muted); line-height: 1.8; font-size: 0.95rem; word-break: break-word; overflow-wrap: anywhere; }
 .blog-post-content h2 { font-size: 1.3rem; font-weight: 700; color: var(--text-main); margin: 2rem 0 0.75rem; }
 .blog-post-content h3 { font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin: 1.5rem 0 0.5rem; }
 .blog-post-content p { margin-bottom: 1.25rem; }
 .blog-post-content ul, .blog-post-content ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
 .blog-post-content li { margin-bottom: 0.4rem; }
-/* Blog MDX table — elegant, matches comparison page style */
-.blog-post-content .mdx-table-wrapper, .blog-post-content table { overflow-x: auto; }
-.blog-post-content table { width: 100%; border-collapse: collapse; margin: 1.75rem 0; font-size: 0.9rem; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); }
+/* Blog MDX table — scrollable on mobile */
+.blog-post-content .mdx-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1.75rem 0; border-radius: 10px; border: 1px solid var(--border-color); }
+.blog-post-content table { display: block; width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-collapse: collapse; font-size: 0.9rem; border-radius: 10px; border: 1px solid var(--border-color); }
 .blog-post-content thead th { background: var(--bg-card); color: var(--text-main); font-weight: 700; padding: 1rem 1.25rem; border-bottom: 2px solid var(--border-color); text-align: left; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
 .blog-post-content tbody td { padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border-color); color: var(--text-muted); vertical-align: middle; }
 .blog-post-content tbody tr:last-child td { border-bottom: none; }
@@ -1589,4 +1591,204 @@ html, body {
 .compare-cell-text { color: var(--text-muted); text-align: center; font-size: 0.82rem; }
 .compare-table tr:last-child td { border-bottom: none; }
 .compare-table tr:hover td { background: var(--bg-card-hover); }
+
+/* ============================================================
+   HAMBURGER / MOBILE NAV
+   ============================================================ */
+
+.hamburger-btn {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-main);
+  padding: 0.4rem 0.5rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hamburger-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* On desktop the history icon label is hidden — just icon */
+.nav-link-icon-label {
+  display: none;
+}
+
+/* Mobile nav drawer */
+@media (max-width: 640px) {
+  .hamburger-btn {
+    display: flex;
+  }
+
+  /* On mobile the nav becomes an absolute drawer */
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(7, 7, 20, 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.5rem 1.25rem 1.25rem;
+    flex-direction: column;
+    gap: 0;
+    z-index: 99;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .nav-links.nav-open {
+    display: flex;
+  }
+
+  .nav-links .nav-link {
+    font-size: 1rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Show label text for history icon on mobile */
+  .nav-link-icon-label {
+    display: inline;
+  }
+
+  /* Theme toggle in the drawer */
+  .nav-links .theme-toggle {
+    margin-top: 0.75rem;
+    width: fit-content;
+    padding: 0.5rem 0.875rem;
+    border-radius: var(--border-radius-md);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .nav-links .theme-toggle::after {
+    content: 'Toggle theme';
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+}
+
+/* ============================================================
+   COMPARE TOOL — RESPONSIVE GRID HELPERS
+   ============================================================ */
+
+/* Two-column upload slots */
+.compare-upload-grid-resp {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 540px) {
+  .compare-upload-grid-resp {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Three-column canvas grid */
+.compare-canvas-grid-resp {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .compare-canvas-grid-resp {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .compare-canvas-grid-resp {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   GLOBAL MOBILE OVERRIDES  (≤ 480px — small smartphones)
+   ============================================================ */
+
+@media (max-width: 480px) {
+  /* Tighten horizontal page padding */
+  .main-content {
+    padding: 1rem;
+  }
+
+  /* Header: tighter padding, keep logo + hamburger visible */
+  .header {
+    padding: 0.75rem 1rem;
+  }
+
+  /* Workspace title scales down */
+  .workspace-title {
+    font-size: clamp(1.25rem, 5vw, 1.75rem);
+  }
+
+  /* Tool card min-width guard */
+  .tools-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  /* Dropzone padding relief */
+  .dropzone {
+    padding: 2rem 1rem;
+  }
+
+  /* Workspace actions bar: wrap on tiny screens */
+  .workspace-actions-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  /* Blog post container: tighter padding on phones */
+  .blog-post-container {
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  /* Blog index: single column on tiny screens */
+  .blog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Blog table: smaller font and cell padding so table is usable when scrolling */
+  .blog-post-content table {
+    font-size: 0.8rem;
+  }
+  .blog-post-content thead th {
+    padding: 0.75rem 0.875rem;
+    font-size: 0.72rem;
+  }
+  .blog-post-content tbody td {
+    padding: 0.65rem 0.875rem;
+  }
+}
+
+/* ============================================================
+   TABLET TWEAKS  (641px – 900px)
+   ============================================================ */
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .tools-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+
+  .main-content {
+    padding: 1.25rem 1.5rem;
+  }
+}
+
 
