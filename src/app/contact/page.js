@@ -10,7 +10,8 @@ export default function ContactPage() {
     name: '',
     email: '',
     subject: 'General Inquiry',
-    message: ''
+    message: '',
+    honeypot: '', // hidden field — bots fill it, humans don't
   });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -38,7 +39,7 @@ export default function ContactPage() {
       }
 
       setSubmitted(true);
-      setFormData({ name: '', email: '', subject: 'General Inquiry', message: '' });
+      setFormData({ name: '', email: '', subject: 'General Inquiry', message: '', honeypot: '' });
     } catch (err) {
       console.error('Submission error:', err);
       setError(err.message || 'Failed to send your message.');
@@ -93,6 +94,16 @@ export default function ContactPage() {
         )}
 
         <form onSubmit={handleSubmit} className="contact-form">
+          {/* Honeypot — invisible to humans, bots fill it automatically */}
+          <input
+            type="text"
+            name="honeypot"
+            value={formData.honeypot}
+            onChange={handleChange}
+            style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', tabIndex: -1 }}
+            aria-hidden="true"
+            autoComplete="off"
+          />
           <div className="form-group">
             <label className="form-label" htmlFor="name">Name</label>
             <input

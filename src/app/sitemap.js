@@ -1,10 +1,11 @@
 import { getAllPosts } from '../lib/blog';
 
-// Force static generation — sitemap is built once at deploy time, served from CDN cache.
-// No edge function is invoked per request.
+// Force static generation — sitemap is built once at deploy time.
+// BUILD_TIME is evaluated at build time (not per-request), giving an
+// accurate "last updated" timestamp for tool and static pages automatically.
 export const dynamic = 'force-static';
 
-const LAST_MODIFIED = new Date('2026-07-30').toISOString();
+const BUILD_TIME = new Date().toISOString();
 
 export default function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.uselocalpdf.com';
@@ -48,32 +49,37 @@ export default function sitemap() {
     { route: '/compare/localpdf-vs-pdf24', priority: 0.7 },
   ];
 
-  // Blog posts
+  // Blog posts — use each post's own publication date for accurate lastModified.
+  // Falls back to BUILD_TIME if a post has no date in its frontmatter.
   let blogPosts = [];
   try {
     const posts = getAllPosts();
-    blogPosts = posts.map(p => ({ route: `/blog/${p.slug}`, priority: 0.8 }));
+    blogPosts = posts.map(p => ({
+      route: `/blog/${p.slug}`,
+      priority: 0.8,
+      lastModified: p.date ? new Date(p.date).toISOString() : BUILD_TIME,
+    }));
   } catch {
     // Blog posts directory may not exist yet
   }
 
   const toolEntries = toolRoutes.map(route => ({
     url: `${baseUrl}${route}`,
-    lastModified: LAST_MODIFIED,
+    lastModified: BUILD_TIME, // ← automatically the deploy timestamp
     changeFrequency: 'monthly',
     priority: 0.85,
   }));
 
   const staticEntries = staticRoutes.map(({ route, priority }) => ({
     url: `${baseUrl}${route}`,
-    lastModified: LAST_MODIFIED,
+    lastModified: BUILD_TIME,
     changeFrequency: route === '' ? 'weekly' : 'monthly',
     priority,
   }));
 
-  const blogEntries = blogPosts.map(({ route, priority }) => ({
+  const blogEntries = blogPosts.map(({ route, priority, lastModified }) => ({
     url: `${baseUrl}${route}`,
-    lastModified: LAST_MODIFIED,
+    lastModified, // ← each post uses its own frontmatter date
     changeFrequency: 'monthly',
     priority,
   }));

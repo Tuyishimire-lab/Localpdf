@@ -6,6 +6,7 @@ import CookieConsent from "./components/CookieConsent";
 import Script from "next/script";
 import { FileProvider } from "../context/FileContext";
 import PWARegistration from "./components/PWARegistration";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -100,6 +101,7 @@ export default function RootLayout({ children }) {
         </FileProvider>
         <PWARegistration />
         <CookieConsent />
+        <PWAInstallPrompt />
         {/* Google Analytics handles all page-view tracking client-side — no edge cost */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-96QW4FDKFV"
