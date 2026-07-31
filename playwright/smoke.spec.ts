@@ -30,6 +30,7 @@ test.describe('Homepage', () => {
 
 // ── Tool Pages ──────────────────────────────────────────────────────────────
 const tools = [
+  // Original tools
   { name: 'Compress', path: '/tools/compress' },
   { name: 'Merge', path: '/tools/merge' },
   { name: 'Split', path: '/tools/split' },
@@ -40,6 +41,17 @@ const tools = [
   { name: 'Rotate', path: '/tools/rotate' },
   { name: 'Organize', path: '/tools/organize' },
   { name: 'Repair', path: '/tools/repair' },
+  { name: 'Edit', path: '/tools/edit' },
+  { name: 'JPG to PDF', path: '/tools/jpg-to-pdf' },
+  { name: 'PDF to JPG', path: '/tools/pdf-to-jpg' },
+  { name: 'Unlock', path: '/tools/unlock' },
+  { name: 'Page Numbers', path: '/tools/page-numbers' },
+  // New tools added last session
+  { name: 'PDF to Word', path: '/tools/pdf-to-word' },
+  { name: 'PDF to Excel', path: '/tools/pdf-to-excel' },
+  { name: 'Flatten', path: '/tools/flatten' },
+  { name: 'Compare PDFs', path: '/tools/compare' },
+  { name: 'Word to PDF', path: '/tools/word-to-pdf' },
 ];
 
 for (const tool of tools) {
@@ -93,6 +105,24 @@ const staticPages = [
   { name: 'Privacy', path: '/privacy', titleMatch: /privacy/i },
   { name: 'Terms', path: '/terms', titleMatch: /terms/i },
 ];
+
+// ── Compare Pages ────────────────────────────────────────────────────────────
+const comparePages = [
+  { name: 'LocalPDF vs iLovePDF', path: '/compare/localpdf-vs-ilovepdf' },
+  { name: 'LocalPDF vs Smallpdf', path: '/compare/localpdf-vs-smallpdf' },
+  { name: 'LocalPDF vs PDF24', path: '/compare/localpdf-vs-pdf24' },
+];
+
+for (const cp of comparePages) {
+  test(`${cp.name} compare page loads with h1 and a table`, async ({ page }) => {
+    await page.goto(cp.path);
+    const h1 = page.locator('h1');
+    await expect(h1).toBeVisible({ timeout: 10_000 });
+    // Each compare page should have a comparison table
+    const table = page.locator('table').first();
+    await expect(table).toBeVisible({ timeout: 10_000 });
+  });
+}
 
 for (const pg of staticPages) {
   test(`${pg.name} page loads with an h1`, async ({ page }) => {
