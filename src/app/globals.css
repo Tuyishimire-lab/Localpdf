@@ -1570,9 +1570,9 @@ html, body {
 .blog-post-content p { margin-bottom: 1.25rem; }
 .blog-post-content ul, .blog-post-content ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
 .blog-post-content li { margin-bottom: 0.4rem; }
-/* Blog MDX table — scrollable on mobile */
+/* Blog MDX table - scrollable on mobile */
 .blog-post-content .mdx-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1.75rem 0; border-radius: 10px; border: 1px solid var(--border-color); }
-.blog-post-content table { display: block; width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-collapse: collapse; font-size: 0.9rem; border-radius: 10px; border: 1px solid var(--border-color); }
+.blog-post-content table { width: 100%; border-collapse: collapse; font-size: 0.9rem; border-radius: 10px; border: 1px solid var(--border-color); table-layout: auto; }
 .blog-post-content thead th { background: var(--bg-card); color: var(--text-main); font-weight: 700; padding: 1rem 1.25rem; border-bottom: 2px solid var(--border-color); text-align: left; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
 .blog-post-content tbody td { padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border-color); color: var(--text-muted); vertical-align: middle; }
 .blog-post-content tbody tr:last-child td { border-bottom: none; }

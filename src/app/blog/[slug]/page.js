@@ -5,6 +5,16 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 
+// Wraps every markdown table in a scrollable container.
+// This prevents the empty-right-area bug caused by display:block on <table>.
+const mdxComponents = {
+  table: (props) => (
+    <div className="mdx-table-wrapper">
+      <table {...props} />
+    </div>
+  ),
+};
+
 const BASE = 'https://www.uselocalpdf.com';
 
 export async function generateStaticParams() {
@@ -104,7 +114,11 @@ export default async function BlogPost({ params }) {
         </div>
 
         <article className="blog-post-content mdx-content">
-          <MDXRemote source={post.content} options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }} />
+          <MDXRemote
+            source={post.content}
+            options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+            components={mdxComponents}
+          />
         </article>
 
         <div className="blog-post-footer">

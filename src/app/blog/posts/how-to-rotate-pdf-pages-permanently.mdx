@@ -1,0 +1,83 @@
+﻿---
+title: "How to Rotate PDF Pages Permanently (Fix Orientation)"
+description: "PDF pages that are sideways or upside down are frustrating to read. This guide explains why rotation sometimes doesn't save, and how to rotate PDF pages permanently for free."
+date: "2026-07-31"
+readTime: "4 min"
+category: "Guide"
+---
+
+You scan a document and half the pages come out sideways. Or you open a PDF and find certain pages are upside down. You rotate them in your PDF viewer - and then open the file again and they are sideways again.
+
+This happens because PDF viewers can display pages rotated without actually saving the rotation to the file. Fixing this requires a tool that writes the rotation permanently into the PDF itself.
+
+## Why Rotation Often Does Not "Stick"
+
+PDF files contain a `Rotate` property for each page that specifies its display orientation. When you rotate a page in most PDF viewers (Preview on Mac, the browser's built-in viewer, some versions of Acrobat Reader), the viewer rotates the display without writing the change back to the file.
+
+The result: the file opens sideways on every device because the underlying file was never changed.
+
+To fix orientation permanently, you need a tool that actually modifies the `Rotate` value in the PDF page data and saves a new file.
+
+## Common Causes of Incorrectly Oriented PDF Pages
+
+**Scanning.** Scanners default to portrait orientation. Landscape documents or pages placed sideways in the feeder produce rotated pages.
+
+**Phone camera scans.** Photos of documents taken in landscape mode may be saved with an orientation tag that not all PDF converters honor correctly.
+
+**Mixed orientation documents.** A report with mostly portrait pages and a few landscape charts or tables can cause confusion when printed or shared.
+
+**PDF export errors.** Some applications export PDFs with incorrect page rotation metadata.
+
+## Rotating Pages with LocalPDF
+
+[LocalPDF Rotate](https://www.uselocalpdf.com/tools/rotate) permanently writes rotation into the PDF file.
+
+**Step 1:** Open [uselocalpdf.com/tools/rotate](https://www.uselocalpdf.com/tools/rotate).
+
+**Step 2:** Upload your PDF.
+
+**Step 3:** Select which pages to rotate. Options typically include:
+- All pages
+- Specific pages by number (e.g., pages 3, 5, 7)
+- A page range (e.g., pages 10–15)
+
+**Step 4:** Choose the rotation direction and angle:
+- **90° clockwise** (most common fix for sideways pages)
+- **90° counter-clockwise**
+- **180°** (for upside-down pages)
+
+**Step 5:** Apply and download. Open the resulting PDF in any viewer on any device - the orientation is now correct and permanent.
+
+## Rotating Individual Pages vs. the Entire Document
+
+**Rotate all pages** when the entire scan came out sideways - for example, you placed the document in the feeder in the wrong direction.
+
+**Rotate specific pages** when only some pages are affected - common in mixed-format documents where landscape charts are interspersed with portrait text pages.
+
+**Rotate a range** when a continuous block of pages is incorrect - for example, a chapter that was scanned separately and inserted at the wrong orientation.
+
+## Mixed Orientation Documents: A Practical Note
+
+Some documents legitimately contain both portrait and landscape pages - a report where the main text is portrait but data tables are landscape. This is a valid PDF structure and does not need rotation correction.
+
+Before rotating, verify whether pages are genuinely misoriented or intentionally landscape. A landscape page in a portrait document is correct if its content is a wide table or chart designed to be read sideways.
+
+## Fixing Scanned Documents
+
+If you are dealing with a large scanned document with many misoriented pages, an organize tool with visual thumbnails can help you identify exactly which pages need rotation before you process them. Use [LocalPDF Organize](https://www.uselocalpdf.com/tools/organize) to preview page thumbnails, then rotate the specific pages that need it.
+
+## After Rotating
+
+Once your pages are correctly oriented, consider:
+
+- **Adding page numbers** if the document needs them - [LocalPDF Page Numbers](https://www.uselocalpdf.com/tools/page-numbers)
+- **Compressing** if the scanned document is large - [LocalPDF Compress](https://www.uselocalpdf.com/tools/compress)
+- **Applying OCR** to make scanned text searchable - [LocalPDF OCR](https://www.uselocalpdf.com/tools/ocr)
+
+## Privacy When Rotating PDFs
+
+Scanned documents often contain sensitive content - contracts, ID documents, medical records, financial statements. With LocalPDF, your file is processed entirely in your browser. No page of your document is ever sent to any server. This is the appropriate approach for documents you would not want a third party to access.
+
+## Conclusion
+
+Rotation that only affects the viewer is not the same as permanent rotation. To permanently fix PDF page orientation, use a tool that writes the rotation change into the PDF file itself. Upload your PDF, select the affected pages, choose the rotation angle, and download a file that opens correctly on every device, every time.

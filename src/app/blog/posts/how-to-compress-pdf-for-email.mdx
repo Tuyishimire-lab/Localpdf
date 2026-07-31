@@ -1,0 +1,98 @@
+﻿---
+title: "How to Compress a PDF for Email Attachments (Under 10MB)"
+description: "Gmail, Outlook, and Yahoo all have attachment size limits. This guide explains how to compress a PDF specifically for email, hit the right file size, and keep quality acceptable."
+date: "2026-07-31"
+readTime: "5 min"
+category: "Guide"
+---
+
+You have finished a PDF - a proposal, report, or invoice - and you are ready to email it. Then the email client says the attachment is too large. This is one of the most common PDF frustrations in professional settings, and the fix is straightforward once you understand what is causing the size and how compression works.
+
+## Email Attachment Size Limits by Provider
+
+Different email providers enforce different limits:
+
+| Email Service | Attachment Limit |
+|---|---|
+| Gmail | 25 MB per message |
+| Outlook / Hotmail | 20 MB per message |
+| Yahoo Mail | 25 MB per message |
+| Apple Mail (iCloud) | 20 MB (Mail Drop available for larger) |
+| Corporate email (Exchange) | Varies - often 10 MB or 20 MB |
+
+Note that even if your provider allows 25 MB, the recipient's provider may reject the message if their limit is lower. A practical target for emails going to unknown recipients is **10 MB or less**. For recipients with known corporate email, consider **5 MB** a safe threshold.
+
+## Why PDFs Get So Large
+
+Understanding what makes a PDF large helps you compress it more effectively:
+
+**High-resolution images.** The most common cause of oversized PDFs. A PDF with photos or scanned pages at 300 DPI or higher can be enormous. Reducing image resolution to 150 DPI is typically invisible on screen and significantly smaller.
+
+**Unoptimized fonts.** PDFs embed fonts to ensure consistent rendering. Some tools embed entire font sets when only a subset is needed.
+
+**Scanned documents.** Scanning at high DPI creates large image-based PDFs. A 10-page color scan at 600 DPI can easily reach 50 MB.
+
+**Embedded metadata.** Some PDFs carry extensive metadata, preview images, and version history.
+
+**Multiple layers and transparency effects.** Complex graphics with transparency can substantially increase file size.
+
+## Target File Sizes: A Practical Guide
+
+| Document Type | Realistic Target |
+|---|---|
+| Text-only report (10 pages) | Under 500 KB |
+| Report with charts and logos | 1–3 MB |
+| Scanned document (10 pages, B&W) | Under 2 MB |
+| Scanned document (10 pages, color) | 2–8 MB |
+| Brochure with photography | 3–8 MB |
+| Technical drawing or blueprint | 2–5 MB |
+
+## How to Compress a PDF for Email
+
+[LocalPDF Compress](https://www.uselocalpdf.com/tools/compress) reduces PDF file size directly in your browser. No upload required.
+
+**Step 1:** Open [uselocalpdf.com/tools/compress](https://www.uselocalpdf.com/tools/compress).
+
+**Step 2:** Drag your PDF onto the upload area or click to select it.
+
+**Step 3:** Choose your compression level. For email purposes, **Medium** compression (screen quality) is usually sufficient. Use **High** only if the file is still too large after Medium compression.
+
+**Step 4:** Click Compress and wait for processing.
+
+**Step 5:** Review the output file size. If it meets your target, download it. If it is still too large, try higher compression or consider the alternatives below.
+
+## Compression vs. Quality: What Gets Sacrificed
+
+PDF compression primarily works by reducing image resolution and applying more aggressive image encoding. Here is what changes at different levels:
+
+**Low compression (print quality):** Minimal quality loss. Images remain at near-original resolution. Suitable for documents you also want to print. File size reduction is modest, typically 20–40%.
+
+**Medium compression (screen quality):** Images are reduced to 150 DPI, appropriate for on-screen reading. Quality difference is often unnoticeable on a monitor. File size reduction of 40–80% is common.
+
+**High compression (minimum size):** Images reduced to 72–96 DPI. Visible degradation on photos but acceptable for text-heavy documents. Maximum file size reduction.
+
+For most business documents - contracts, reports, invoices - Medium compression gives an excellent result that is undetectable on screen.
+
+## When Compression Is Not Enough
+
+If a PDF is still too large after maximum compression, consider:
+
+**Extract only the needed pages.** If you are sending 5 relevant pages from a 60-page document, extract those pages first using [LocalPDF Split](https://www.uselocalpdf.com/tools/split), then compress.
+
+**Use a file sharing service instead.** For very large files, send a link instead of an attachment. Google Drive, Dropbox, OneDrive, and WeTransfer all provide free sharing options.
+
+**Convert images to lower resolution before creating the PDF.** If you control the source, reduce image resolution before PDF creation rather than compressing afterwards.
+
+## Does Compression Change the Document Content?
+
+Compression does not change text, layout, page structure, or document logic. Only the visual quality of embedded images is affected. Text remains sharp because it is stored as vector data, not pixels.
+
+Compressing a PDF is non-destructive to text, hyperlinks, form fields, and document structure.
+
+## Privacy When Compressing PDFs for Email
+
+If your PDF contains sensitive business or personal data - which is likely if you are emailing it - choose a tool that compresses locally. With [LocalPDF](https://www.uselocalpdf.com), the compression happens in JavaScript in your browser. Your file is never uploaded to any server. This is particularly relevant for financial documents, legal agreements, and HR files.
+
+## Conclusion
+
+Compressing a PDF for email is a two-step mental process: understand why your PDF is large (usually images), and apply the right compression level (usually medium). With a browser-based tool, the whole process takes under a minute. Aim for 10 MB or less for general recipients, and 5 MB for corporate email environments where limits are tighter.
