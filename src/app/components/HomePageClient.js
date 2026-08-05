@@ -24,7 +24,11 @@ import {
   TableProperties,
   GitCompare,
   Wrench,
-  LayersIcon
+  LayersIcon,
+  EyeOff,
+  ShieldCheck,
+  Bot,
+  Sparkles
 } from 'lucide-react';
 
 const tools = [
@@ -127,6 +131,20 @@ const tools = [
     href: '/tools/unlock',
   },
   {
+    id: 'redact',
+    title: 'Redact & Sanitize',
+    description: 'Permanently black out sensitive text/data and strip document metadata for complete privacy.',
+    icon: EyeOff,
+    href: '/tools/redact',
+  },
+  {
+    id: 'ai-chat',
+    title: 'AI PDF Summarizer & Chat',
+    description: 'Summarize PDFs and ask questions in natural language 100% locally in your browser.',
+    icon: Bot,
+    href: '/tools/ai-chat',
+  },
+  {
     id: 'word-to-pdf',
     title: 'Word/TXT to PDF',
     description: 'Convert Microsoft Word (.docx) and plain text (.txt) files into high-quality PDFs client-side.',
@@ -139,13 +157,6 @@ const tools = [
     description: 'Convert PDF files to editable Microsoft Word (.docx) documents entirely in your browser.',
     icon: FileText,
     href: '/tools/pdf-to-word',
-  },
-  {
-    id: 'pdf-to-excel',
-    title: 'PDF to Excel',
-    description: 'Extract tables and data from PDFs into Excel spreadsheets (.xlsx). Beta feature.',
-    icon: TableProperties,
-    href: '/tools/pdf-to-excel',
   },
   {
     id: 'flatten',
@@ -241,11 +252,11 @@ export default function HomePageClient() {
         </p>
       </section>
 
-      <div className="tools-grid">
+      <div className="tools-grid" suppressHydrationWarning>
         {tools.map((tool) => {
           const IconComponent = tool.icon;
           return (
-            <Link key={tool.id} href={tool.href} className="tool-card">
+            <Link key={tool.id} href={tool.href} className="tool-card" suppressHydrationWarning>
               <div className="tool-card-icon-container">
                 <IconComponent size={24} />
               </div>

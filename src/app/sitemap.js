@@ -28,10 +28,11 @@ export default function sitemap() {
     '/tools/word-to-pdf',
     // New tools
     '/tools/pdf-to-word',
-    '/tools/pdf-to-excel',
     '/tools/flatten',
     '/tools/compare',
     '/tools/repair',
+    '/tools/redact',
+    '/tools/ai-chat',
   ];
 
   const staticRoutes = [

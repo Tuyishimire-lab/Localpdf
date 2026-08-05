@@ -290,6 +290,62 @@ The watermark is embedded permanently into each page using pdf-lib, so it appear
     ],
   },
 
+  redact: {
+    title: 'Redact & Sanitize PDF',
+    description: `LocalPDF's Redact & Sanitize PDF tool allows you to permanently black out sensitive information such as Social Security Numbers, names, financial figures, or confidential records, and strip hidden document metadata before sharing.
+
+Unlike basic tools that merely draw a shape over text, LocalPDF flattens redacted pages into high-resolution images. This guarantees zero text stream leakage, making it impossible for recipients to highlight, copy, or extract redacted data.
+
+Additionally, our Metadata Sanitizer strips author names, creation software, revision history, and custom document properties for 100% privacy compliance.`,
+    howTo: [
+      'Upload your PDF using the drag-and-drop area.',
+      'Use your mouse on the canvas preview to draw black redaction boxes over sensitive text or numbers.',
+      'Optionally use the "Auto-Redact" field to search and automatically place redaction boxes over matching keywords across all pages.',
+      'Check the "Sanitize PDF Metadata" toggle to wipe document author, title, and creation timestamps.',
+      'Click "Redact & Sanitize PDF" to generate and download your permanently secured PDF.',
+    ],
+    features: [
+      { title: 'Permanent Blackout', description: 'Redaction boxes are burned into the document pages to ensure text cannot be selected or extracted.' },
+      { title: 'Keyword Auto-Redact', description: 'Search keywords across the document to automatically highlight and redact all occurrences.' },
+      { title: 'Metadata Stripper', description: 'Remove sensitive document properties including Author, Title, Creator, Producer, and Creation Date.' },
+      { title: '100% Local Privacy', description: 'Document processing runs entirely in your local browser using Web Workers. No file uploads or cloud servers.' },
+    ],
+    faqs: [
+      { q: 'Is this redaction permanent?', a: 'Yes. LocalPDF flattens redacted pages into image layers, permanently removing the underlying text stream so it cannot be recovered.' },
+      { q: 'Can someone copy-paste text underneath a black redaction box?', a: 'No. Because the redacted pages are rasterized and re-embedded, there is no selectable text layer beneath the blacked-out areas.' },
+      { q: 'What metadata is stripped when sanitizing?', a: 'Sanitization strips the Title, Author, Subject, Keywords, Creator, Producer, Creation Date, and Modification Date fields from the PDF metadata dictionary.' },
+      { q: 'Is any data uploaded to a server?', a: 'No. All PDF loading, canvas rendering, blackout drawing, and metadata sanitization occur 100% locally on your computer.' },
+    ],
+  },
+
+  'ai-chat': {
+    title: 'AI PDF Summarizer & Chat',
+    description: `LocalPDF's AI PDF Summarizer & Chat tool enables you to summarize complex PDF documents and ask questions in plain natural language—with 100% in-browser privacy execution.
+
+Unlike online AI PDF services that transmit your confidential contracts, medical records, or financial statements to cloud servers, LocalPDF runs all semantic indexing and question answering locally inside your Web browser using client-side JavaScript. Zero server uploads, zero API keys needed.
+
+Features include executive document overviews, key highlight bullets, top topic extraction, reading time statistics, and interactive Q&A chat with direct clickable page citations.`,
+    howTo: [
+      'Upload your PDF document using the file selector or drag-and-drop.',
+      'View the Executive Summary tab for an instant overview, key highlight bullets, and main topics.',
+      'Switch to the Q&A Chat tab and type any question or click a suggested prompt chip.',
+      'Receive instant answers grounded in document content with clickable [Page X] citations.',
+      'Clicking a page citation automatically jumps the PDF viewer to that exact page.',
+    ],
+    features: [
+      { title: '100% Local Privacy', description: 'All document text extraction, semantic indexing, and Q&A execute inside your browser. No files leave your device.' },
+      { title: 'Executive Summary', description: 'Get automated overviews, key highlights, and top entities extracted instantly from any document.' },
+      { title: 'Interactive Q&A Chat', description: 'Ask questions in natural language and receive grounded answers with exact page references.' },
+      { title: 'Clickable Page Citations', description: 'Click page tags in AI responses to jump the PDF page viewer directly to the target source page.' },
+    ],
+    faqs: [
+      { q: 'Is my document uploaded to an AI cloud server?', a: 'No. LocalPDF processes the document entirely in your browser using local JavaScript NLP algorithms. Your document is never sent to OpenAI, Anthropic, or any remote server.' },
+      { q: 'Do I need an API key to use the AI PDF Chat?', a: 'No API key or account creation is required. All features work out of the box directly in your web browser.' },
+      { q: 'Can I click on the page numbers in AI responses?', a: 'Yes! Clicking any [Page X] citation in the chat thread automatically navigates the PDF page viewer to that page.' },
+      { q: 'Does this tool work on scanned PDFs?', a: 'For best results, use PDFs with selectable text layers. If your PDF is a scanned image, run it through our OCR tool first.' },
+    ],
+  },
+
   'page-numbers': {
     title: 'Add Page Numbers to PDF',
     description: `Page numbers are an essential element of any formal document. Reports, theses, proposals, manuals, and books all require numbered pages for navigation and referencing. If you have assembled a PDF from multiple sources or converted it from another format, it may lack page numbers entirely.

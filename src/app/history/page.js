@@ -12,7 +12,7 @@ const TOOL_ICONS = {
   'pdf-to-jpg': '🖼️', 'jpg-to-pdf': '📄', sign: '✍️', rotate: '🔄',
   watermark: '💧', 'page-numbers': '#️⃣', protect: '🔒', unlock: '🔓',
   'word-to-pdf': '📝', organize: '📋', 'pdf-to-word': '📃', flatten: '📄',
-  compare: '⚖️', repair: '🔧', 'pdf-to-excel': '📊',
+  compare: '⚖️', repair: '🔧', redact: '⬛', 'ai-chat': '🤖',
 };
 
 export default function HistoryPage() {

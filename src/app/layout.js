@@ -87,7 +87,7 @@ export default function RootLayout({ children }) {
 
   return (
     <html lang="en" className={`${outfit.variable} ${inter.variable}`} suppressHydrationWarning>
-      <body>
+      <body suppressHydrationWarning>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
         <FileProvider>

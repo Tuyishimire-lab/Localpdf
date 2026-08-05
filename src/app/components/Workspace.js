@@ -120,14 +120,16 @@ export default function Workspace({
               )}
             </div>
             
-            <button 
-              className="btn-primary" 
-              onClick={onProcess}
-              disabled={processing || files.length === 0}
-              style={{ marginTop: '1.5rem', width: '100%' }}
-            >
-              {processLabel}
-            </button>
+            {onProcess && processLabel && (
+              <button 
+                className="btn-primary" 
+                onClick={onProcess}
+                disabled={processing || files.length === 0}
+                style={{ marginTop: '1.5rem', width: '100%' }}
+              >
+                {processLabel}
+              </button>
+            )}
           </aside>
         </div>
       )}
