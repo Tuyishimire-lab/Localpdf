@@ -48,7 +48,7 @@ export default class ToolErrorBoundary extends React.Component {
         <div className="tool-error-icon">
           <AlertTriangle size={40} strokeWidth={1.5} />
         </div>
-        <h2 className="tool-error-title">Oops — {toolName} ran into a problem</h2>
+        <h2 className="tool-error-title">Oops! {toolName} ran into a problem</h2>
         <p className="tool-error-desc">
           {errorMessage.length < 120
             ? errorMessage

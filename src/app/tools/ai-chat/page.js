@@ -4,7 +4,7 @@ import ClientPage from './ClientPage';
 import ToolContentSection from '../../components/ToolContentSection';
 
 const BASE = 'https://www.uselocalpdf.com';
-const title = 'AI PDF Summarizer & Chat Online – Private Local AI Q&A | LocalPDF';
+const title = 'AI PDF Summarizer & Chat Online | Private Local AI Q&A | LocalPDF';
 const description = 'Summarize PDFs and ask questions in natural language 100% locally in your browser. Zero cloud uploads, zero API keys, complete privacy guarantee.';
 
 export const metadata = {

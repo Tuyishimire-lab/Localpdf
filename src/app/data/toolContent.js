@@ -320,7 +320,7 @@ Additionally, our Metadata Sanitizer strips author names, creation software, rev
 
   'ai-chat': {
     title: 'AI PDF Summarizer & Chat',
-    description: `LocalPDF's AI PDF Summarizer & Chat tool enables you to summarize complex PDF documents and ask questions in plain natural language—with 100% in-browser privacy execution.
+    description: `LocalPDF's AI PDF Summarizer & Chat tool enables you to summarize complex PDF documents and ask questions in plain natural language with 100% in-browser privacy execution.
 
 Unlike online AI PDF services that transmit your confidential contracts, medical records, or financial statements to cloud servers, LocalPDF runs all semantic indexing and question answering locally inside your Web browser using client-side JavaScript. Zero server uploads, zero API keys needed.
 
@@ -627,7 +627,7 @@ This is a Beta feature. Table detection accuracy depends heavily on the source P
       { q: 'Can I extract data from a scanned PDF?', a: 'Scanned PDFs contain images with no text data. Use LocalPDF OCR first to add a text layer, then convert to Excel.' },
       { q: 'Why is the Beta badge shown?', a: 'Table detection from arbitrary PDFs is an inherently approximate process. We show the Beta label to set honest expectations about accuracy rather than implying perfect conversion.' },
       { q: 'Is there a page limit?', a: 'There is no imposed page limit. Very long documents may take more time to process but will complete on most modern devices.' },
-      { q: 'My PDF has financial data — is it safe to use this tool?', a: 'Yes. All processing happens in your browser with no server uploads. Financial data in your PDF is never transmitted anywhere.' },
+      { q: 'My PDF has financial data, is it safe to use this tool?', a: 'Yes. All processing happens in your browser with no server uploads. Financial data in your PDF is never transmitted anywhere.' },
     ],
   },
 };
