@@ -26,15 +26,16 @@ const STOP_WORDS = new Set([
 
 /**
  * Extracts and chunks text page-by-page from a loaded pdf.js document.
- * If native text count is low (scanned document), runs Tesseract OCR fallback.
- * @param {any} pdfDoc 
- * @param {function} [onProgress] 
+ * Tracks per-page word counts and only OCRs pages with sparse native text (Fix 1).
+ * Uses splitIntoSentences() so headings and bullet points are preserved (Fix 2).
+ * @param {any} pdfDoc
+ * @param {function} [onProgress]
  * @returns {Promise<Array<{ pageNum: number, chunkIndex: number, text: string, wordCount: number, isOcr?: boolean }>>}
  */
 export async function parsePdfTextChunks(pdfDoc, onProgress) {
   const chunks = [];
   const totalPages = pdfDoc.numPages;
-  let totalNativeWords = 0;
+  const perPageWordCount = {};  // Fix 1: track words per page to avoid duplicate OCR
 
   // 1. Attempt fast native text stream extraction
   for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
@@ -46,17 +47,17 @@ export async function parsePdfTextChunks(pdfDoc, onProgress) {
       .replace(/\s+/g, ' ')
       .trim();
 
+    const words = pageText ? pageText.split(/\s+/).filter(Boolean) : [];
+    perPageWordCount[pageNum] = words.length;  // Fix 1
+
     if (!pageText) continue;
 
-    const words = pageText.split(/\s+/).filter(Boolean);
-    totalNativeWords += words.length;
-
     let chunkIdx = 0;
-    const sentences = pageText.match(/[^.!?]+[.!?]+/g) || [pageText];
+    const sentences = splitIntoSentences(pageText);  // Fix 2: two-pass splitter
     let currentChunkWords = [];
 
     for (const sentence of sentences) {
-      const sWords = sentence.trim().split(/\s+/);
+      const sWords = sentence.trim().split(/\s+/).filter(Boolean);
       currentChunkWords.push(...sWords);
 
       if (currentChunkWords.length >= 200) {
@@ -82,14 +83,19 @@ export async function parsePdfTextChunks(pdfDoc, onProgress) {
     }
   }
 
-  // 2. Fallback to Tesseract OCR if text is sparse (< 20 words across pages)
-  if (totalNativeWords < 20 && typeof window !== 'undefined') {
-    onProgress && onProgress({ status: 'No text layer found. Running local OCR on scanned pages...' });
+  // 2. OCR fallback — only for pages with < 5 native words (Fix 1: no more global total)
+  // This prevents re-processing pages that already have native text.
+  const sparsePagesForOcr = Object.entries(perPageWordCount)
+    .filter(([, count]) => count < 5)
+    .map(([p]) => parseInt(p, 10));
+
+  if (sparsePagesForOcr.length > 0 && typeof window !== 'undefined') {
+    onProgress && onProgress({ status: 'Sparse text detected. Running local OCR on affected pages...' });
 
     try {
       const Tesseract = (await import('tesseract.js')).default;
 
-      for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      for (const pageNum of sparsePagesForOcr) {
         onProgress && onProgress({ status: `Running OCR on page ${pageNum} of ${totalPages}...` });
 
         const page = await pdfDoc.getPage(pageNum);
@@ -107,12 +113,12 @@ export async function parsePdfTextChunks(pdfDoc, onProgress) {
         const ocrText = (ret.data.text || '').replace(/\s+/g, ' ').trim();
 
         if (ocrText) {
-          const sentences = ocrText.match(/[^.!?]+[.!?]+/g) || [ocrText];
+          const sentences = splitIntoSentences(ocrText);  // Fix 2: same helper for OCR path
           let currentChunkWords = [];
           let chunkIdx = 0;
 
           for (const sentence of sentences) {
-            const sWords = sentence.trim().split(/\s+/);
+            const sWords = sentence.trim().split(/\s+/).filter(Boolean);
             currentChunkWords.push(...sWords);
 
             if (currentChunkWords.length >= 200) {
@@ -147,63 +153,148 @@ export async function parsePdfTextChunks(pdfDoc, onProgress) {
 }
 
 /**
- * Tokenize and clean words
+ * Tokenize and clean words.
+ * Preserves currency symbols ($, €, £), percent signs, and intra-word hyphens (Fix 8)
+ * so terms like "$500", "non-disclosure", and "50%" are tokenized correctly.
+ * Minimum token length lowered to 2 so abbreviations like "AI", "EU", "UK" are retained.
  */
 function tokenize(text) {
   return text
     .toLowerCase()
-    .replace(/[^\w\s]/g, '')
+    .replace(/[^\w\s$€£%-]/g, ' ')      // keep currency, percent, intra-word hyphens
+    .replace(/(?<!\w)-|-(?!\w)/g, ' ')  // remove bare hyphens not part of compounds
     .split(/\s+/)
-    .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+    .filter((w) => w.length >= 2 && !STOP_WORDS.has(w));
 }
 
 /**
- * Smart Document Category Detection (Legal, Finance, General)
- * @param {string} fullText 
+ * Splits page text into sentence-like segments using a two-pass approach. (Fix 2)
+ * Pass 1: captures punctuation-delimited sentences.
+ * Pass 2: captures headings, bullet points, table rows, and other non-sentence lines
+ *         that would otherwise be silently discarded by a punctuation-only regex.
+ * @param {string} text
+ * @returns {string[]}
+ */
+function splitIntoSentences(text) {
+  if (!text) return [];
+  const segments = [];
+  for (const line of text.split(/\n+/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    // Try to split the line on sentence-ending punctuation
+    const byPunct = trimmed.match(/[^.!?;]+[.!?;]+/g);
+    if (byPunct && byPunct.length > 0) {
+      segments.push(...byPunct);
+      // Capture any trailing text without punctuation (e.g. a heading like "Section 1:")
+      const joined = byPunct.join('');
+      if (trimmed.length > joined.length + 2) {
+        const tail = trimmed.slice(joined.length).trim();
+        if (tail) segments.push(tail);
+      }
+    } else {
+      // No sentence-ending punctuation — treat entire line as one segment
+      segments.push(trimmed);
+    }
+  }
+  return segments.length > 0 ? segments : [text];
+}
+
+/**
+ * Sanitizes the opening text of a document for use in the overview. (Fix 5)
+ * Strips lines that are all-caps watermarks, too short, or purely numeric PDF artifacts.
+ * @param {string} text
+ * @returns {string}
+ */
+function sanitizeLeadText(text) {
+  return text
+    .split(/\n+/)
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (trimmed.length < 15) return false;              // too short
+      if (/^[A-Z\s\d\W]+$/.test(trimmed)) return false;  // all-caps headers/watermarks
+      if (/^[\d\s.,]+$/.test(trimmed)) return false;     // pure numbers/page markers
+      if (trimmed.split(/\s+/).length < 4) return false; // fewer than 4 words
+      return true;
+    })
+    .join(' ')
+    .slice(0, 300);
+}
+
+/**
+ * Smart Document Category Detection (Legal, Medical, Finance, Academic, General). (Fix 7)
+ * Priority when tied: legal > medical > finance > academic > general.
+ * @param {string} fullText
  */
 export function detectDocumentCategory(fullText) {
   const text = fullText.toLowerCase();
 
-  const legalTerms = ['agreement', 'contract', 'party', 'obligations', 'governing law', 'liability', 'termination', 'shall', 'clause', 'indemnify'];
-  const financeTerms = ['invoice', 'total', 'budget', 'price', 'payment', 'tax', 'bill', 'vendor', 'purchase', 'order', 'amount', 'expenditure', 'usd', 'rwf', 'eur'];
+  const legalTerms    = ['agreement', 'contract', 'party', 'obligations', 'governing law', 'liability', 'termination', 'shall', 'clause', 'indemnify'];
+  const medicalTerms  = ['patient', 'diagnosis', 'treatment', 'dosage', 'clinical', 'symptoms', 'prognosis', 'prescribed', 'medication', 'hospital', 'physician'];
+  const financeTerms  = ['invoice', 'total', 'budget', 'price', 'payment', 'tax', 'bill', 'vendor', 'purchase', 'order', 'amount', 'expenditure', 'usd', 'rwf', 'eur'];
+  const academicTerms = ['abstract', 'methodology', 'hypothesis', 'findings', 'references', 'bibliography', 'conclusion', 'dataset', 'figure', 'journal', 'doi'];
 
-  let legalScore = 0;
-  let financeScore = 0;
+  let legalScore = 0, medicalScore = 0, financeScore = 0, academicScore = 0;
 
-  legalTerms.forEach((term) => {
-    if (text.includes(term)) legalScore += 2;
-  });
+  legalTerms.forEach((t)    => { if (text.includes(t)) legalScore    += 2; });
+  medicalTerms.forEach((t)  => { if (text.includes(t)) medicalScore  += 2; });
+  financeTerms.forEach((t)  => { if (text.includes(t)) financeScore  += 2; });
+  academicTerms.forEach((t) => { if (text.includes(t)) academicScore += 2; });
 
-  financeTerms.forEach((term) => {
-    if (text.includes(term)) financeScore += 2;
-  });
+  const maxScore = Math.max(legalScore, medicalScore, financeScore, academicScore);
 
-  if (legalScore > financeScore && legalScore >= 4) {
-    return {
-      type: 'legal',
-      label: 'Legal Contract / Agreement',
-      icon: '📜',
-      prompts: [
-        'What are the main party obligations?',
-        'What are the termination conditions?',
-        'What is the governing law?',
-        'Summarize key liabilities & penalties',
-      ],
-    };
-  }
-
-  if (financeScore > legalScore && financeScore >= 4) {
-    return {
-      type: 'finance',
-      label: 'Financial / Budget / Purchase Order',
-      icon: '💼',
-      prompts: [
-        'What is the total budget/amount?',
-        'List all key line items & costs',
-        'Who are the vendors or parties?',
-        'Summarize payment & incentive policy',
-      ],
-    };
+  if (maxScore >= 4) {
+    if (legalScore === maxScore) {
+      return {
+        type: 'legal',
+        label: 'Legal Contract / Agreement',
+        icon: '📜',
+        prompts: [
+          'What are the main party obligations?',
+          'What are the termination conditions?',
+          'What is the governing law?',
+          'Summarize key liabilities & penalties',
+        ],
+      };
+    }
+    if (medicalScore === maxScore) {
+      return {
+        type: 'medical',
+        label: 'Medical / Clinical Report',
+        icon: '🏥',
+        prompts: [
+          'What is the diagnosis?',
+          'List prescribed medications & dosages',
+          'What are the treatment recommendations?',
+          'Summarize key findings & test results',
+        ],
+      };
+    }
+    if (financeScore === maxScore) {
+      return {
+        type: 'finance',
+        label: 'Financial / Budget / Purchase Order',
+        icon: '💼',
+        prompts: [
+          'What is the total budget/amount?',
+          'List all key line items & costs',
+          'Who are the vendors or parties?',
+          'Summarize payment & incentive policy',
+        ],
+      };
+    }
+    if (academicScore === maxScore) {
+      return {
+        type: 'academic',
+        label: 'Academic / Research Paper',
+        icon: '🎓',
+        prompts: [
+          'What is the research hypothesis?',
+          'Summarize the methodology',
+          'What are the key findings?',
+          'List cited references & authors',
+        ],
+      };
+    }
   }
 
   return {
@@ -221,8 +312,10 @@ export function detectDocumentCategory(fullText) {
 
 /**
  * Generates executive document summary, statistics, category, and top key topics.
- * @param {Array<{ pageNum: number, text: string, wordCount: number, isOcr?: boolean }>} chunks 
- * @param {number} totalPages 
+ * Applies position bias + novelty filter to keyPoints selection (Fix 4).
+ * Uses sanitized lead text and the top keyPoint to build the overview (Fix 5).
+ * @param {Array<{ pageNum: number, text: string, wordCount: number, isOcr?: boolean }>} chunks
+ * @param {number} totalPages
  */
 export function generateDocumentSummary(chunks, totalPages) {
   if (!chunks || chunks.length === 0) {
@@ -255,28 +348,52 @@ export function generateDocumentSummary(chunks, totalPages) {
     .slice(0, 8)
     .map(([word]) => word.charAt(0).toUpperCase() + word.slice(1));
 
-  // Extract key sentences across pages
-  const sentences = fullText.match(/[^.!?]+[.!?]+/g) || [];
-  const scoredSentences = sentences
-    .map((s) => {
+  // Score sentences with position bias (Fix 4)
+  const allSentences = fullText.match(/[^.!?]+[.!?]+/g) || [];
+  const totalSentences = allSentences.length;
+
+  const scoredSentences = allSentences
+    .map((s, idx) => {
       const sTokens = tokenize(s);
       let score = 0;
-      for (const t of sTokens) {
-        score += freqMap[t] || 0;
-      }
-      return { sentence: s.trim(), score: score / Math.max(1, sTokens.length) };
+      for (const t of sTokens) score += freqMap[t] || 0;
+      const baseScore = score / Math.max(1, sTokens.length);
+      // Position bias: sentences in the first 25% score 40% higher (Fix 4)
+      const positionMultiplier = idx / Math.max(1, totalSentences) < 0.25 ? 1.4 : 1.0;
+      return { sentence: s.trim(), score: baseScore * positionMultiplier };
     })
     .filter((obj) => obj.sentence.length > 30 && obj.sentence.length < 250);
 
   scoredSentences.sort((a, b) => b.score - a.score);
-  const keyPoints = scoredSentences.slice(0, 4).map((obj) => obj.sentence);
+
+  // Novelty filter: skip sentences with >60% token overlap with already-selected keyPoints (Fix 4)
+  const keyPoints = [];
+  const selectedTokenSets = [];
+
+  for (const obj of scoredSentences) {
+    if (keyPoints.length >= 4) break;
+    const candidateTokens = new Set(tokenize(obj.sentence));
+    let isDuplicate = false;
+    for (const existingSet of selectedTokenSets) {
+      const intersection = [...candidateTokens].filter((t) => existingSet.has(t)).length;
+      const overlap = intersection / Math.max(1, Math.min(candidateTokens.size, existingSet.size));
+      if (overlap > 0.6) { isDuplicate = true; break; }
+    }
+    if (!isDuplicate) {
+      keyPoints.push(obj.sentence);
+      selectedTokenSets.push(candidateTokens);
+    }
+  }
 
   if (keyPoints.length === 0) {
     keyPoints.push(`Document contains ${wordCount} words across ${totalPages} pages.`);
   }
 
-  const firstChunk = chunks[0]?.text.slice(0, 300) || '';
-  const overview = `[${category.label}] This document spans ${totalPages} page(s) containing approximately ${wordCount.toLocaleString()} words${isScannedOcr ? ' (extracted via local OCR)' : ''}. Main topics cover ${sortedTokens.slice(0, 4).join(', ')}. Key opening context: "${firstChunk.trim()}..."`;
+  // Build overview using the top keyPoint as the lead sentence (Fix 5)
+  const rawFirstChunk = chunks[0]?.text || '';
+  const cleanLead = sanitizeLeadText(rawFirstChunk);
+  const leadSentence = keyPoints[0] || cleanLead.split(/[.!?]/)[0] || '';
+  const overview = `[${category.label}] ${leadSentence ? `${leadSentence.trim()}. ` : ''}This document spans ${totalPages} page(s) with approximately ${wordCount.toLocaleString()} words${isScannedOcr ? ' (extracted via local OCR)' : ''}. Main topics: ${sortedTokens.slice(0, 4).join(', ')}.`;
 
   return {
     overview,
@@ -294,8 +411,10 @@ export function generateDocumentSummary(chunks, totalPages) {
 
 /**
  * RAG Semantic Question Answering over PDF chunks.
- * @param {string} query 
- * @param {Array<{ pageNum: number, text: string }>} chunks 
+ * Pre-tokenizes all chunks once and uses prefix-stem matching with early exit
+ * instead of a full O(n²) inner loop. (Fix 3)
+ * @param {string} query
+ * @param {Array<{ pageNum: number, text: string }>} chunks
  */
 export function answerDocumentQuestion(query, chunks) {
   if (!chunks || chunks.length === 0) {
@@ -313,19 +432,26 @@ export function answerDocumentQuestion(query, chunks) {
     };
   }
 
-  // Score chunks using TF-IDF term overlap
-  const scoredChunks = chunks.map((chunk) => {
-    const chunkTokens = tokenize(chunk.text);
+  // Pre-tokenize all chunks once — avoids repeated tokenize() calls inside scoring loop (Fix 3)
+  const tokenizedChunks = chunks.map((chunk) => ({
+    ...chunk,
+    _tokens: tokenize(chunk.text),
+  }));
+
+  // Score each chunk: exact match = 2pts, prefix-stem match (both ≥5 chars) = 0.5pts (Fix 3)
+  const scoredChunks = tokenizedChunks.map((chunk) => {
+    const chunkTokenSet = new Set(chunk._tokens);
     let matchScore = 0;
-    const chunkTokenSet = new Set(chunkTokens);
 
     for (const qToken of queryTokens) {
       if (chunkTokenSet.has(qToken)) {
         matchScore += 2;
-      } else {
+      } else if (qToken.length >= 5) {
+        // Only partial-match when both tokens are substantial — reduces false positives
         for (const cToken of chunkTokenSet) {
-          if (cToken.includes(qToken) || qToken.includes(cToken)) {
-            matchScore += 1;
+          if (cToken.length >= 5 && (cToken.startsWith(qToken) || qToken.startsWith(cToken))) {
+            matchScore += 0.5;
+            break; // count at most once per query token
           }
         }
       }
@@ -333,7 +459,7 @@ export function answerDocumentQuestion(query, chunks) {
 
     return {
       ...chunk,
-      score: matchScore / Math.max(1, Math.sqrt(chunkTokens.length)),
+      score: matchScore / Math.max(1, Math.sqrt(chunk._tokens.length)),
     };
   });
 
@@ -403,65 +529,163 @@ export function exportReportToMarkdown(summary, messages, fileName) {
 }
 
 /**
- * Export Summary & Chat Transcript to Client PDF
- * @param {any} summary 
- * @param {Array<any>} messages 
- * @param {string} fileName 
+ * Wraps a string into lines that fit within maxChars characters.
+ * @param {string} text
+ * @param {number} maxChars
+ * @returns {string[]}
+ */
+function wrapText(text, maxChars = 78) {
+  const words = (text || '').split(/\s+/);
+  const lines = [];
+  let current = '';
+
+  for (const word of words) {
+    if ((current + (current ? ' ' : '') + word).length > maxChars) {
+      if (current) lines.push(current);
+      // Hard-break words longer than maxChars
+      let remaining = word;
+      while (remaining.length > maxChars) {
+        lines.push(remaining.slice(0, maxChars));
+        remaining = remaining.slice(maxChars);
+      }
+      current = remaining;
+    } else {
+      current = current ? `${current} ${word}` : word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+/**
+ * Returns the current page if there is enough room, otherwise adds a new page
+ * and resets the y cursor.
+ * @param {import('pdf-lib').PDFDocument} pdfDoc
+ * @param {number} y
+ * @param {number} neededHeight - minimum vertical space required
+ * @returns {{ page: import('pdf-lib').PDFPage, y: number }}
+ */
+function getOrAddPage(pdfDoc, y, neededHeight = 20) {
+  const MARGIN_BOTTOM = 50;
+  if (y - neededHeight >= MARGIN_BOTTOM) {
+    const pages = pdfDoc.getPages();
+    return { page: pages[pages.length - 1], y };
+  }
+  const newPage = pdfDoc.addPage([595, 842]);
+  return { page: newPage, y: 800 };
+}
+
+/**
+ * Export Summary & Chat Transcript to Client PDF.
+ * Supports multi-page output so long summaries and Q&A transcripts are never clipped.
+ * @param {any} summary
+ * @param {Array<any>} messages
+ * @param {string} fileName
  * @returns {Promise<Blob>}
  */
 export async function exportReportToPdf(summary, messages, fileName) {
   const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([595, 842]); // A4
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
+  let currentPage = pdfDoc.addPage([595, 842]); // first A4 page
   let y = 800;
 
-  // Title
-  page.drawText(`LocalPDF AI Report: ${(fileName || 'Document').slice(0, 30)}`, {
-    x: 40,
-    y,
+  const draw = (text, opts) => {
+    currentPage.drawText(text, { x: 40, y, ...opts });
+  };
+
+  // ── Title ──────────────────────────────────────────────────────────────────
+  ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 20));
+  draw(`LocalPDF AI Report: ${(fileName || 'Document').slice(0, 50)}`, {
     size: 16,
     font: boldFont,
     color: rgb(0.06, 0.09, 0.16),
   });
   y -= 25;
 
-  // Category
-  page.drawText(`Category: ${summary?.category?.label || 'General'} | Pages: ${summary?.stats?.totalPages || 1} | Words: ${summary?.stats?.wordCount || 0}`, {
-    x: 40,
-    y,
-    size: 10,
-    font,
-    color: rgb(0.3, 0.4, 0.5),
-  });
-  y -= 30;
+  // ── Stats bar ──────────────────────────────────────────────────────────────
+  ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 16));
+  draw(
+    `Category: ${summary?.category?.label || 'General'} | Pages: ${summary?.stats?.totalPages || 1} | Words: ${(summary?.stats?.wordCount || 0).toLocaleString()} | Reading time: ~${summary?.stats?.readingTimeMinutes || 1} min`,
+    { size: 9, font, color: rgb(0.3, 0.4, 0.5) }
+  );
+  y -= 28;
 
-  // Overview
-  page.drawText('Executive Overview:', { x: 40, y, size: 12, font: boldFont, color: rgb(0.1, 0.1, 0.2) });
+  // ── Executive Overview ─────────────────────────────────────────────────────
+  ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 18));
+  draw('Executive Overview:', { size: 12, font: boldFont, color: rgb(0.1, 0.1, 0.2) });
   y -= 18;
 
-  const overviewLines = (summary?.overview || '').slice(0, 300).match(/.{1,75}(\s|$)/g) || [summary?.overview || ''];
-  overviewLines.forEach((line) => {
-    if (y > 40) {
-      page.drawText(line.trim(), { x: 40, y, size: 9.5, font, color: rgb(0.2, 0.25, 0.3) });
+  for (const line of wrapText(summary?.overview || '', 90)) {
+    ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 14));
+    currentPage.drawText(line, { x: 40, y, size: 9.5, font, color: rgb(0.2, 0.25, 0.3) });
+    y -= 14;
+  }
+  y -= 12;
+
+  // ── Key Highlights ─────────────────────────────────────────────────────────
+  ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 18));
+  draw('Key Highlights:', { size: 12, font: boldFont, color: rgb(0.1, 0.1, 0.2) });
+  y -= 18;
+
+  for (const pt of (summary?.keyPoints || []).slice(0, 5)) {
+    for (const line of wrapText(`- ${pt}`, 88)) {
+      ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 14));
+      currentPage.drawText(line, { x: 40, y, size: 9, font, color: rgb(0.2, 0.25, 0.3) });
       y -= 14;
     }
-  });
+  }
+  y -= 12;
 
-  y -= 15;
+  // ── Main Topics ────────────────────────────────────────────────────────────
+  if ((summary?.topTopics || []).length > 0) {
+    ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 18));
+    draw('Main Topics:', { size: 12, font: boldFont, color: rgb(0.1, 0.1, 0.2) });
+    y -= 16;
+    ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 14));
+    currentPage.drawText(summary.topTopics.join('  ·  '), { x: 40, y, size: 9, font, color: rgb(0.25, 0.35, 0.55) });
+    y -= 24;
+  }
 
-  // Key Highlights
-  page.drawText('Key Highlights:', { x: 40, y, size: 12, font: boldFont, color: rgb(0.1, 0.1, 0.2) });
-  y -= 18;
+  // ── Q&A Chat Transcript ────────────────────────────────────────────────────
+  const chatMessages = (messages || []).filter((m) => m?.text);
+  if (chatMessages.length > 1) {
+    ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 22));
+    draw('Q&A Chat Transcript:', { size: 12, font: boldFont, color: rgb(0.1, 0.1, 0.2) });
+    y -= 20;
 
-  (summary?.keyPoints || []).slice(0, 4).forEach((pt) => {
-    if (y > 40) {
-      const ptLine = (`- ${pt}`).slice(0, 80);
-      page.drawText(ptLine, { x: 40, y, size: 9, font, color: rgb(0.2, 0.25, 0.3) });
-      y -= 15;
+    for (const msg of chatMessages) {
+      const isUser = msg.sender === 'user';
+      const label = isUser ? `👤 User (${msg.time || ''})` : `🤖 LocalPDF AI (${msg.time || ''})`;
+      const labelColor = isUser ? rgb(0.1, 0.3, 0.6) : rgb(0.1, 0.45, 0.3);
+
+      ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 16));
+      currentPage.drawText(label, { x: 40, y, size: 9.5, font: boldFont, color: labelColor });
+      y -= 14;
+
+      for (const line of wrapText(msg.text || '', 88)) {
+        ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 13));
+        currentPage.drawText(line, { x: 48, y, size: 9, font, color: rgb(0.2, 0.25, 0.3) });
+        y -= 13;
+      }
+      y -= 8; // gap between messages
     }
-  });
+  }
+
+  // ── Footer on every page ───────────────────────────────────────────────────
+  const allPages = pdfDoc.getPages();
+  const totalPageCount = allPages.length;
+  for (let i = 0; i < totalPageCount; i++) {
+    const pg = allPages[i];
+    pg.drawText(`LocalPDF Privacy Engine  ·  Page ${i + 1} of ${totalPageCount}`, {
+      x: 40,
+      y: 28,
+      size: 7.5,
+      font,
+      color: rgb(0.5, 0.55, 0.6),
+    });
+  }
 
   const pdfBytes = await pdfDoc.save();
   return new Blob([pdfBytes], { type: 'application/pdf' });

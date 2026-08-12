@@ -30,6 +30,7 @@ export default function AiChatTool() {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const chatEndRef = useRef(null);
+  const chunkCacheRef = useRef({});  // Fix 9: file fingerprint → { pdfDoc, chunks, summary }
 
   const handleFilesSelected = async (selectedFiles) => {
     const targetFile = selectedFiles[0];
@@ -41,6 +42,24 @@ export default function AiChatTool() {
     setSummary(null);
     setMessages([]);
     setInputQuery('');
+
+    // Fix 9: Check fingerprint cache before running the full extraction pipeline
+    const fingerprint = `${targetFile.name}::${targetFile.size}::${targetFile.lastModified}`;
+    const cached = chunkCacheRef.current[fingerprint];
+    if (cached) {
+      setPdfDoc(cached.pdfDoc);
+      setTotalPages(cached.pdfDoc.numPages);
+      setChunks(cached.chunks);
+      setSummary(cached.summary);
+      setMessages([{
+        id: 1,
+        sender: 'ai',
+        text: `Welcome back! "${targetFile.name}" is already indexed (${cached.pdfDoc.numPages} pages). Ask me anything!`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }]);
+      return;
+    }
+
     setIsLoadingPdf(true);
     setIsAnalyzing(true);
     setStatusText('Indexing document & extracting text...');
@@ -72,6 +91,11 @@ export default function AiChatTool() {
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
+
+      // Fix 9: Save to cache, evicting oldest entry if cache is full (max 3 entries)
+      const cacheKeys = Object.keys(chunkCacheRef.current);
+      if (cacheKeys.length >= 3) delete chunkCacheRef.current[cacheKeys[0]];
+      chunkCacheRef.current[fingerprint] = { pdfDoc: doc, chunks: extractedChunks, summary: docSummary };
 
       addHistoryEntry({
         tool: 'ai-chat',
@@ -145,8 +169,8 @@ export default function AiChatTool() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
 
-  // Handle Question Submit
-  const handleSendMessage = (queryText) => {
+  // Handle Question Submit – async to yield the main thread before scoring (Fix 6)
+  const handleSendMessage = async (queryText) => {
     const textToSend = (queryText || inputQuery).trim();
     if (!textToSend || !pdfDoc) return;
 
@@ -162,24 +186,25 @@ export default function AiChatTool() {
     setIsThinking(true);
     setActiveTab('chat');
 
-    setTimeout(() => {
-      const { answer, relevantPageNum } = answerDocumentQuestion(textToSend, chunks);
+    // Yield to the browser so React can paint the "thinking" indicator before scoring (Fix 6)
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
-      const aiMsg = {
-        id: Date.now() + 1,
-        sender: 'ai',
-        text: answer,
-        relevantPageNum,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
+    const { answer, relevantPageNum } = answerDocumentQuestion(textToSend, chunks);
 
-      setMessages((prev) => [...prev, aiMsg]);
-      setIsThinking(false);
+    const aiMsg = {
+      id: Date.now() + 1,
+      sender: 'ai',
+      text: answer,
+      relevantPageNum,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
 
-      if (relevantPageNum) {
-        setCurrentPage(relevantPageNum);
-      }
-    }, 400);
+    setMessages((prev) => [...prev, aiMsg]);
+    setIsThinking(false);
+
+    if (relevantPageNum) {
+      setCurrentPage(relevantPageNum);
+    }
   };
 
   const handleJumpToPage = (pageNum) => {

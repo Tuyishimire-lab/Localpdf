@@ -619,7 +619,7 @@ This is a Beta feature. Table detection accuracy depends heavily on the source P
     features: [
       { title: 'Multi-Sheet Output', description: 'Each PDF page becomes its own spreadsheet tab, keeping data organized by source page.' },
       { title: 'Position-Based Detection', description: 'Text items are grouped into rows and columns using their X and Y coordinates in the PDF, without requiring explicit table markup.' },
-      { title: 'SheetJS Integration', description: 'Output files are generated using SheetJS (xlsx), producing fully compatible .xlsx files that open in all major spreadsheet applications.' },
+      { title: 'Standard .xlsx Output', description: 'Output files are generated as fully compatible .xlsx spreadsheets that open in Microsoft Excel, Google Sheets, and all major spreadsheet applications.' },
       { title: 'Beta Transparency', description: 'The Beta label means we are honest about accuracy limitations. Check your output and use the data as a starting point for further editing.' },
     ],
     faqs: [
