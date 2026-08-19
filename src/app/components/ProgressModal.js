@@ -1,6 +1,7 @@
 'use client';
 
-import { Check, Download, RotateCcw } from 'lucide-react';
+import { Check, Download, RotateCcw, ShieldCheck } from 'lucide-react';
+import ShareDelight from './ShareDelight';
 
 export default function ProgressModal({ 
   isOpen, 
@@ -15,7 +16,7 @@ export default function ProgressModal({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <div className="modal-content progress-modal-enhanced">
         {!isComplete ? (
           <>
             <div className="modal-spinner"></div>
@@ -28,16 +29,25 @@ export default function ProgressModal({
               <Check size={36} />
             </div>
             <h2 className="modal-title">Success!</h2>
-            <p className="modal-desc">Your file is ready to download. All processing was done privately in your browser.</p>
+            <p className="modal-desc">
+              Your file is ready to download.
+            </p>
+
+            <div className="modal-privacy-tag">
+              <ShieldCheck size={15} />
+              <span>0 bytes sent to servers • 100% private</span>
+            </div>
             
-            <button className="btn-primary" onClick={onDownload}>
+            <button className="btn-primary" onClick={onDownload} style={{ width: '100%', marginBottom: '0.5rem' }}>
               <Download size={20} />
               {downloadLabel}
             </button>
             
-            <button className="btn-secondary" onClick={onClose} style={{ width: '100%' }}>
+            <ShareDelight />
+
+            <button className="btn-secondary" onClick={onClose} style={{ width: '100%', marginTop: '0.75rem' }}>
               <RotateCcw size={16} />
-              Start Over
+              Process Another File
             </button>
           </>
         )}

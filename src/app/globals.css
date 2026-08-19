@@ -2011,5 +2011,298 @@ html, body {
   }
 }
 
+/* ==========================================================================
+   Privacy Proof Badge & Live Verification Styles
+   ========================================================================== */
+.privacy-proof-card {
+  background: linear-gradient(135deg, rgba(16, 24, 42, 0.95), rgba(9, 14, 28, 0.98));
+  border: 1px solid rgba(46, 213, 115, 0.22);
+  border-radius: var(--border-radius-md);
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 18px -4px rgba(0, 0, 0, 0.4), 0 0 12px rgba(46, 213, 115, 0.06);
+  transition: var(--transition-smooth);
+  width: 100%;
+}
+
+.privacy-proof-card:hover {
+  border-color: rgba(46, 213, 115, 0.4);
+  box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.5), 0 0 16px rgba(46, 213, 115, 0.12);
+}
+
+.privacy-proof-card.compact {
+  padding: 0.6rem 0.75rem;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(11, 17, 33, 0.92));
+  border-color: rgba(46, 213, 115, 0.18);
+}
+
+.privacy-proof-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.privacy-badge-main {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.privacy-beacon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.privacy-beacon-dot {
+  width: 7px;
+  height: 7px;
+  background-color: #2ed573;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #2ed573;
+}
+
+.privacy-beacon-ring {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #2ed573;
+  border-radius: 50%;
+  animation: beacon-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  opacity: 0.75;
+}
+
+@keyframes beacon-ping {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.8;
+  }
+  80%, 100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+.privacy-text-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.privacy-status-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #f8fafc;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.privacy-shield-icon {
+  color: #2ed573;
+  flex-shrink: 0;
+}
+
+.privacy-status-subtitle {
+  margin: 0;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.privacy-toggle-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  border-radius: 6px;
+  padding: 0.22rem 0.5rem;
+  font-size: 0.72rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: var(--transition-smooth);
+}
+
+.privacy-toggle-btn:hover {
+  background: rgba(46, 213, 115, 0.14);
+  border-color: rgba(46, 213, 115, 0.35);
+  color: #2ed573;
+}
+
+.privacy-proof-details {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.76rem;
+  color: #cbd5e1;
+  animation: fadeIn 0.2s ease;
+}
+
+.privacy-detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  line-height: 1.35;
+}
+
+.privacy-detail-icon {
+  color: #2ed573;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.privacy-verify-tip {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.72rem;
+  color: #e2e8f0;
+  border-left: 2px solid #2ed573;
+  line-height: 1.4;
+}
+
+.privacy-verify-tip code {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  color: #93c5fd;
+  font-family: monospace;
+}
+
+/* ==========================================================================
+   Progress Modal Enhanced & Viral Share Delight
+   ========================================================================== */
+.progress-modal-enhanced {
+  max-width: 480px;
+  padding: 2rem 1.75rem;
+}
+
+.modal-privacy-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: rgba(46, 213, 115, 0.1);
+  border: 1px solid rgba(46, 213, 115, 0.25);
+  color: #2ed573;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  padding: 0.35rem 0.85rem;
+  margin: 0 auto 1.25rem;
+}
+
+.share-delight-container {
+  width: 100%;
+  margin-top: 1.25rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.share-delight-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+}
+
+.share-delight-heart {
+  color: #ff4757;
+  animation: pulse-heart 1.8s infinite;
+}
+
+@keyframes pulse-heart {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+}
+
+.share-delight-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.share-delight-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: var(--border-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f1f2f6;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.share-delight-btn:hover {
+  transform: translateY(-1px);
+}
+
+.share-delight-btn.share-whatsapp:hover {
+  background: rgba(37, 211, 102, 0.15);
+  border-color: #25D366;
+  color: #25D366;
+}
+
+.share-delight-btn.share-twitter:hover {
+  background: rgba(29, 161, 242, 0.15);
+  border-color: #1DA1F2;
+  color: #1DA1F2;
+}
+
+.share-delight-btn.share-linkedin:hover {
+  background: rgba(10, 102, 194, 0.15);
+  border-color: #0A66C2;
+  color: #0A66C2;
+}
+
+.share-delight-btn.share-copy:hover {
+  background: rgba(255, 71, 87, 0.15);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.share-delight-btn.share-copy.copied {
+  background: rgba(46, 213, 115, 0.2);
+  border-color: #2ed573;
+  color: #2ed573;
+}
+
+.share-delight-btn.share-native {
+  grid-column: span 2;
+}
+
+@media (max-width: 480px) {
+  .share-delight-buttons {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 
 

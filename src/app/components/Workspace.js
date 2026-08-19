@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Trash2, Plus } from 'lucide-react';
 import DragDropZone from './DragDropZone';
 import MetadataViewer from './MetadataViewer';
+import PrivacyProofBadge from './PrivacyProofBadge';
 import { useSharedFile } from '../../context/FileContext';
 
 export default function Workspace({
@@ -65,7 +66,10 @@ export default function Workspace({
       </div>
 
       {files.length === 0 ? (
-        <div style={{ maxWidth: '650px', margin: '3rem auto', width: '100%' }}>
+        <div style={{ maxWidth: '650px', margin: '2rem auto', width: '100%' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <PrivacyProofBadge />
+          </div>
           <DragDropZone
             onFilesSelected={onFilesSelected}
             accept={accept}
@@ -112,6 +116,7 @@ export default function Workspace({
           {/* Right panel: Operations options */}
           <aside className="workspace-right">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, width: '100%' }}>
+              <PrivacyProofBadge compact={true} />
               {children}
               
               {/* PDF metadata accordion */}
