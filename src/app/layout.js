@@ -4,6 +4,7 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import CookieConsent from "./components/CookieConsent";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/react";
 import { FileProvider } from "../context/FileContext";
 import PWARegistration from "./components/PWARegistration";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
@@ -102,6 +103,7 @@ export default function RootLayout({ children }) {
         <PWARegistration />
         <CookieConsent />
         <PWAInstallPrompt />
+        <Analytics />
         {/* Google Analytics handles all page-view tracking client-side — no edge cost */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-96QW4FDKFV"
