@@ -117,6 +117,8 @@ export default function RootLayout({ children }) {
             gtag('config', 'G-96QW4FDKFV');
           `}
         </Script>
+        {/* OmniRoute Tag */}
+        <script async src="https://omni-route-rho.vercel.app/api/v1/track.js?site=www.uselocalpdf.com"></script>
       </body>
     </html>
   );
