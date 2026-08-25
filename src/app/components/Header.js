@@ -5,13 +5,12 @@ import { useState, useEffect, useRef } from 'react';
 import { History, Sun, Moon, BookOpen, GitCompare, Menu, X } from 'lucide-react';
 
 export default function Header() {
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState(() => (typeof window !== 'undefined' ? (localStorage.getItem('localpdf_theme') || 'dark') : 'dark'));
   const [menuOpen, setMenuOpen] = useState(false);
   const headerRef = useRef(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('localpdf_theme') || 'dark';
-    setTheme(stored);
     document.documentElement.setAttribute('data-theme', stored);
   }, []);
 

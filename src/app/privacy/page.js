@@ -2,101 +2,132 @@ export const dynamic = 'force-static';
 
 export const metadata = {
   title: 'Privacy Policy | LocalPDF',
-  description: 'Learn about our commitment to your privacy. LocalPDF executes all PDF edits client-side in your web browser. No files are uploaded to servers.',
+  description: 'Learn about our commitment to privacy. LocalPDF executes all PDF operations 100% locally in your web browser. No documents are ever uploaded to any server.',
 };
 
 export default function PrivacyPage() {
   return (
     <div className="info-page-container">
       <h1 className="info-page-title">Privacy Policy</h1>
-      <p className="info-page-subtitle">Last updated: July 21, 2026</p>
+      <p className="info-page-subtitle">Last updated: August 25, 2026</p>
 
       <div className="info-page-content">
         <p>
-          At <strong>LocalPDF</strong>, accessible from our website, one of our main priorities is the privacy of our visitors. This Privacy Policy document contains types of information that is collected and recorded by LocalPDF and how we use it.
+          At <strong>LocalPDF</strong> (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), accessible at{' '}
+          <a href="https://www.uselocalpdf.com" style={{ color: 'var(--primary-color)' }}>
+            www.uselocalpdf.com
+          </a>
+          , we believe that data privacy is a fundamental right. This Privacy Policy details our data practices, our client-side architecture, and your privacy rights.
         </p>
 
-        <h2>1. Client-Side Processing (Absolute Privacy)</h2>
+        <h2>1. Data Controller &amp; Contact Information</h2>
         <p>
-          Unlike typical PDF utilities, <strong>LocalPDF operates 100% locally in your web browser</strong>. 
-          When you upload, merge, split, compress, or edit a document, the processing is performed entirely on your device using advanced client-side technologies (such as WebAssembly and JavaScript). 
-          <strong>We never upload your files, document content, metadata, or private data to any remote servers.</strong> Your files remain completely secure and under your control at all times.
+          The data controller responsible for this website is <strong>Tuyishimire Angel</strong> (operator of LocalPDF), based in Kigali, Rwanda.
+        </p>
+        <p>
+          If you have any questions regarding this Privacy Policy, your personal data, or our privacy practices, please contact us at:{' '}
+          <a href="mailto:tuyishime1angel@gmail.com" style={{ color: 'var(--primary-color)' }}>
+            tuyishime1angel@gmail.com
+          </a>{' '}
+          or via our <a href="/contact" style={{ color: 'var(--primary-color)' }}>Contact Page</a>.
         </p>
 
-        <h2>2. Log Files</h2>
+        <h2>2. Zero-Upload Architecture: Complete Document Privacy</h2>
         <p>
-          LocalPDF follows a standard procedure of using log files. These files log visitors when they visit websites. All hosting companies do this as part of hosting services' analytics. The information collected by log files includes internet protocol (IP) addresses, browser type, Internet Service Provider (ISP), date and time stamp, referring/exit pages, and possibly the number of clicks. These are not linked to any information that is personally identifiable. The purpose of the information is for analyzing trends, administering the site, tracking users' movement on the website, and gathering demographic information.
-        </p>
-
-        <h2>3. Cookies and Web Beacons</h2>
-        <p>
-          Like any other website, LocalPDF uses "cookies". These cookies are used to store information including visitors' preferences, and the pages on the website that the visitor accessed or visited. The information is used to optimize the users' experience by customizing our web page content based on visitors' browser type and/or other information.
-        </p>
-
-        <h2>4. Google DoubleClick DART Cookie</h2>
-        <p>
-          Google is one of the third-party vendors on our site. It also uses cookies, known as DART cookies, to serve ads to our site visitors based upon their visit to our site and other sites on the internet. However, visitors may choose to decline the use of DART cookies by visiting the Google ad and content network Privacy Policy at the following URL – <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)' }}>https://policies.google.com/technologies/ads</a>.
-        </p>
-
-        <h2>5. Our Advertising Partners</h2>
-        <p>
-          Some of advertisers on our site may use cookies and web beacons. Our advertising partners include:
+          The core foundation of LocalPDF is our <strong>100% client-side architecture</strong>. Unlike conventional online PDF converters that transfer your documents to remote cloud servers for processing:
         </p>
         <ul>
-          <li><strong>Google AdSense:</strong> Google's advertising network uses cookies to display ads that are relevant to your interests based on your browsing history. You can view their privacy policy and opt-out preferences on their official site.</li>
+          <li>
+            <strong>Your files never leave your device:</strong> All document tasks (including merging, splitting, compressing, OCR text extraction, e-signing, redacting, watermark stamping, format conversion, and local AI chat) execute strictly within your web browser&apos;s sandboxed memory using WebAssembly and client-side JavaScript.
+          </li>
+          <li>
+            <strong>Zero server storage or transit:</strong> No PDF content, scanned images, form data, passwords, or document metadata are ever uploaded to our servers or any third-party infrastructure.
+          </li>
+          <li>
+            <strong>No data breach exposure:</strong> Because we never receive or host your document data, it is technically impossible for your files to be intercepted, leaked, or breached on our systems.
+          </li>
         </ul>
-        <p>
-          Third-party ad servers or ad networks use technologies like cookies, JavaScript, or Web Beacons that are used in their respective advertisements and links that appear on LocalPDF, which are sent directly to users' browser. They automatically receive your IP address when this occurs. These technologies are used to measure the effectiveness of their advertising campaigns and/or to personalize the advertising content that you see on websites that you visit.
-        </p>
-        <p>
-          Note that LocalPDF has no access to or control over these cookies that are used by third-party advertisers.
-        </p>
 
-        <h2>6. Third Party Privacy Policies</h2>
-        <p>
-          LocalPDF's Privacy Policy does not apply to other advertisers or websites. Thus, we are advising you to consult the respective Privacy Policies of these third-party ad servers for more detailed information. It may include their practices and instructions about how to opt-out of certain options.
-        </p>
-        <p>
-          You can choose to disable cookies through your individual browser options. To know more detailed information about cookie management with specific web browsers, it can be found at the browsers' respective websites.
-        </p>
+        <h2>3. Information We Collect and Process</h2>
 
-        <h2>7. CCPA Privacy Rights (Do Not Sell My Personal Information)</h2>
+        <h3>A. Local Browser Storage</h3>
         <p>
-          Under the CCPA, among other rights, California consumers have the right to:
+          To provide convenient features such as theme preferences and your recent file processing history, LocalPDF stores data locally on your device via HTML5 <code>localStorage</code>:
         </p>
         <ul>
-          <li>Request that a business that collects a consumer's personal data disclose the categories and specific pieces of personal data that a business has collected about consumers.</li>
-          <li>Request that a business delete any personal data about the consumer that a business has collected.</li>
-          <li>Request that a business that sells a consumer's personal data, not sell the consumer's personal data.</li>
+          <li><strong>Theme Preference (<code>localpdf_theme</code>):</strong> Remembers your light/dark mode selection.</li>
+          <li><strong>Processing History (<code>localpdf_history</code>):</strong> Keeps a local record of recent tool operations (file name, file size, timestamp). This data remains strictly in your browser and is never transmitted to us. You can clear your history at any time using the Clear History button or your browser settings.</li>
         </ul>
+
+        <h3>B. Contact Form &amp; Support Inquiries</h3>
         <p>
-          If you make a request, we have one month to respond to you. If you would like to exercise any of these rights, please contact us.
+          If you voluntarily reach out to us through our contact form or via email, we collect your name, email address, subject, and the message content you provide. We use this information solely to respond to your inquiry and provide user support. We never sell, rent, or trade your contact information.
         </p>
 
-        <h2>8. GDPR Data Protection Rights</h2>
+        <h3>C. Aggregated Web Analytics</h3>
         <p>
-          We would like to make sure you are fully aware of all of your data protection rights. Every user is entitled to the following:
+          To maintain reliability, evaluate performance, and optimize user experience, we use privacy-conscious analytics tools (such as Google Analytics, OmniRoute, and Vercel Analytics). These services record non-personally identifiable technical telemetry, including:
         </p>
         <ul>
-          <li><strong>The right to access:</strong> You have the right to request copies of your personal data. We may charge you a small fee for this service.</li>
-          <li><strong>The right to rectification:</strong> You have the right to request that we correct any information you believe is inaccurate. You also have the right to request that we complete the information you believe is incomplete.</li>
-          <li><strong>The right to erasure:</strong> You have the right to request that we erase your personal data, under certain conditions.</li>
-          <li><strong>The right to restrict processing:</strong> You have the right to request that we restrict the processing of your personal data, under certain conditions.</li>
-          <li><strong>The right to object to processing:</strong> You have the right to object to our processing of your personal data, under certain conditions.</li>
-          <li><strong>The right to data portability:</strong> You have the right to request that we transfer the data that we have collected to another organization, or directly to you, under certain conditions.</li>
+          <li>Browser type, operating system, and device category</li>
+          <li>Pages visited, referring websites, and timestamps</li>
+          <li>General geographic region (country or city level, with IP anonymization enabled)</li>
         </ul>
-
-        <h2>9. Children's Information</h2>
         <p>
-          Another part of our priority is adding protection for children while using the internet. We encourage parents and guardians to observe, participate in, and/or monitor and guide their online activity.
-        </p>
-        <p>
-          LocalPDF does not knowingly collect any Personal Identifiable Information from children under the age of 13. If you think that your child provided this kind of information on our website, we strongly encourage you to contact us immediately and we will do our best efforts to promptly remove such information from our records.
+          This telemetry is aggregated and cannot be used to identify you personally or access any document you process.
         </p>
 
-        <h2>10. Changes to This Privacy Policy</h2>
+        <h2>4. Cookies &amp; Third-Party Advertising</h2>
         <p>
-          We may update our Privacy Policy from time to time. Thus, we advise you to review this page periodically for any changes. We will notify you of any changes by posting the new Privacy Policy on this page. These changes are effective immediately, after they are posted on this page.
+          LocalPDF may display non-intrusive advertisements (such as Google AdSense) to support the continuous free availability of our service.
+        </p>
+        <p>
+          Third-party ad networks may use cookies and web beacons to serve ads based on a user&apos;s prior visits to this or other websites. You may manage or opt out of personalized advertising by visiting{' '}
+          <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)' }}>
+            Google Ads Settings
+          </a>{' '}
+          or by configuring cookie controls in your browser settings.
+        </p>
+
+        <h2>5. Your Rights Under GDPR (EU &amp; UK Users)</h2>
+        <p>
+          If you reside in the European Economic Area (EEA) or the United Kingdom, you have rights under the General Data Protection Regulation (GDPR). In accordance with GDPR Article 12(5), <strong>exercising your rights is completely free of charge</strong>:
+        </p>
+        <ul>
+          <li><strong>Right of Access:</strong> You have the right to request information regarding any personal data we hold about you.</li>
+          <li><strong>Right to Rectification:</strong> You have the right to request correction of inaccurate or incomplete personal data.</li>
+          <li><strong>Right to Erasure (&quot;Right to be Forgotten&quot;):</strong> You have the right to request the deletion of your personal data (e.g., support emails).</li>
+          <li><strong>Right to Restriction of Processing:</strong> You have the right to request limits on how we process your personal data.</li>
+          <li><strong>Right to Data Portability:</strong> You have the right to receive your personal data in a structured, commonly used format.</li>
+          <li><strong>Right to Object:</strong> You have the right to object to the processing of your personal data.</li>
+        </ul>
+        <p>
+          <em>Note on document data:</em> Because all document processing is executed locally on your machine and we never collect, store, or receive your documents, we hold no document records to provide or delete.
+        </p>
+        <p>
+          To exercise any of your data protection rights, please contact us at{' '}
+          <a href="mailto:tuyishime1angel@gmail.com" style={{ color: 'var(--primary-color)' }}>
+            tuyishime1angel@gmail.com
+          </a>
+          . We will respond within 30 days.
+        </p>
+
+        <h2>6. California Privacy Rights (CCPA / CPRA)</h2>
+        <p>
+          Under the California Consumer Privacy Act (CCPA) and the California Privacy Rights Act (CPRA), California residents are entitled to know what personal information is collected, request deletion, and opt out of any sale of personal information.
+        </p>
+        <p>
+          <strong>We do not sell, rent, or share personal data or document content to third parties for monetary or commercial consideration.</strong>
+        </p>
+
+        <h2>7. Children&apos;s Privacy</h2>
+        <p>
+          LocalPDF does not knowingly collect or solicit personal identifiable information from children under the age of 13. If you believe that a child has provided us with personal information through our contact form, please notify us immediately and we will promptly delete such records.
+        </p>
+
+        <h2>8. Changes to This Privacy Policy</h2>
+        <p>
+          We may update this Privacy Policy from time to time to reflect technological improvements, legal requirements, or operational changes. Any updates will be posted on this page with an updated revision date.
         </p>
       </div>
     </div>

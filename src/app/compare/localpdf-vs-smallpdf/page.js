@@ -72,10 +72,10 @@ export default function VsSmallpdf() {
 
       <article className="blog-post-content">
         <h2>Free Tier Restrictions</h2>
-        <p>Smallpdf's free tier is the most restrictive among major PDF services: 2 tasks per day and a 15 MB file size limit. This makes it impractical for anyone with moderate PDF processing needs. LocalPDF imposes no task limit and no file size restriction on any operation.</p>
+        <p>Smallpdf&apos;s free tier is the most restrictive among major PDF services: 2 tasks per day and a 15 MB file size limit. This makes it impractical for anyone with moderate PDF processing needs. LocalPDF imposes no task limit and no file size restriction on any operation.</p>
 
         <h2>Privacy</h2>
-        <p>Like all major PDF tool services, Smallpdf uploads your files to their servers for processing. They are based in Switzerland and comply with Swiss and EU privacy laws. However, any server-based service involves trusting a third party with your document content. LocalPDF's browser-based processing eliminates this trust requirement entirely.</p>
+        <p>Like all major PDF tool services, Smallpdf uploads your files to their servers for processing. They are based in Switzerland and comply with Swiss and EU privacy laws. However, any server-based service involves trusting a third party with your document content. LocalPDF&apos;s browser-based processing eliminates this trust requirement entirely.</p>
 
         <h2>Cloud Integration vs Privacy</h2>
         <p>Smallpdf integrates with Google Drive, Dropbox, and OneDrive, which is convenient for users who already store documents in the cloud. LocalPDF does not offer cloud integration by design, since cloud integration implies uploading your documents to external services, which conflicts with the privacy-first approach.</p>

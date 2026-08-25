@@ -1,8 +1,6 @@
 'use client';
 
-export const dynamic = 'force-static';
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { History, Trash2, FileText, ExternalLink } from 'lucide-react';
 import { getHistory, clearHistory, formatBytes, formatDate } from '../../lib/history';
@@ -16,11 +14,7 @@ const TOOL_ICONS = {
 };
 
 export default function HistoryPage() {
-  const [entries, setEntries] = useState([]);
-
-  useEffect(() => {
-    setEntries(getHistory());
-  }, []);
+  const [entries, setEntries] = useState(() => (typeof window !== 'undefined' ? getHistory() : []));
 
   const handleClear = () => {
     if (confirm('Clear all processing history?')) {

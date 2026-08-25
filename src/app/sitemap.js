@@ -37,7 +37,8 @@ export default function sitemap() {
 
   const staticRoutes = [
     { route: '', priority: 1.0 },
-    { route: '/about', priority: 0.5 },
+    { route: '/about', priority: 0.6 },
+    { route: '/security', priority: 0.6 },
     { route: '/contact', priority: 0.5 },
     { route: '/privacy', priority: 0.4 },
     { route: '/terms', priority: 0.4 },

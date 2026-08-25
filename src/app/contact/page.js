@@ -1,9 +1,8 @@
 'use client';
 
-export const dynamic = 'force-static';
-
 import { useState } from 'react';
-import { Mail, MessageSquare, Send } from 'lucide-react';
+import Link from 'next/link';
+import { Mail, MessageSquare, Send, MapPin, Code2, ShieldCheck, ExternalLink } from 'lucide-react';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -56,7 +55,7 @@ export default function ContactPage() {
   return (
     <div className="info-page-container">
       <h1 className="info-page-title">Contact Us</h1>
-      <p className="info-page-subtitle">Have questions or feedback? We'd love to hear from you.</p>
+      <p className="info-page-subtitle">Have questions or feedback? We&apos;d love to hear from you.</p>
 
       <div className="info-page-content">
         <p style={{ marginBottom: '2rem' }}>
@@ -74,7 +73,7 @@ export default function ContactPage() {
             textAlign: 'center',
             fontWeight: '600'
           }}>
-            🎉 Your message has been sent successfully! We'll get back to you shortly.
+            🎉 Your message has been sent successfully! We&apos;ll get back to you shortly.
           </div>
         )}
 
@@ -184,35 +183,67 @@ export default function ContactPage() {
           borderTop: '1px solid var(--border-color)', 
           paddingTop: '2rem',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           gap: '1.5rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div className="tool-card-icon-container" style={{ width: '40px', height: '40px', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <div className="tool-card-icon-container" style={{ width: '40px', height: '40px', borderRadius: '8px', flexShrink: 0 }}>
               <Mail size={18} />
             </div>
             <div>
-              <h4 style={{ fontSize: '0.9rem', fontWeight: '700' }}>Email Us</h4>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '0.2rem' }}>Direct Email</h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
                 <a href="mailto:tuyishime1angel@gmail.com" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = 'var(--primary-color)'} onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}>
                   tuyishime1angel@gmail.com
                 </a>
               </p>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div className="tool-card-icon-container" style={{ width: '40px', height: '40px', borderRadius: '8px', color: 'var(--secondary-color)', backgroundColor: 'rgba(155, 89, 182, 0.08)' }}>
-              <MessageSquare size={18} />
+
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <div className="tool-card-icon-container" style={{ width: '40px', height: '40px', borderRadius: '8px', flexShrink: 0, color: 'var(--primary-color)', backgroundColor: 'rgba(255, 71, 87, 0.08)' }}>
+              <Code2 size={18} />
             </div>
             <div>
-              <h4 style={{ fontSize: '0.9rem', fontWeight: '700' }}>Community</h4>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                <a href="https://discord.gg/cwXngnqgu" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = 'var(--secondary-color)'} onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}>
-                  Join Discord Server
+              <h4 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '0.2rem' }}>GitHub &amp; Issues</h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                <a href="https://github.com/Tuyishimire-lab/Localpdf" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }} onMouseEnter={(e) => e.target.style.color = 'var(--primary-color)'} onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}>
+                  Tuyishimire-lab/Localpdf <ExternalLink size={11} />
                 </a>
               </p>
             </div>
           </div>
+
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <div className="tool-card-icon-container" style={{ width: '40px', height: '40px', borderRadius: '8px', flexShrink: 0, color: 'var(--secondary-color)', backgroundColor: 'rgba(155, 89, 182, 0.08)' }}>
+              <MessageSquare size={18} />
+            </div>
+            <div>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '0.2rem' }}>Community</h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                <a href="https://discord.gg/cwXngnqgu" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }} onMouseEnter={(e) => e.target.style.color = 'var(--secondary-color)'} onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}>
+                  Discord Server <ExternalLink size={11} />
+                </a>
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <div className="tool-card-icon-container" style={{ width: '40px', height: '40px', borderRadius: '8px', flexShrink: 0, color: 'var(--success-color)', backgroundColor: 'rgba(46, 213, 115, 0.08)' }}>
+              <MapPin size={18} />
+            </div>
+            <div>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '0.2rem' }}>Operator &amp; Location</h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                Tuyishimire Angel<br />
+                Kigali, Rwanda
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+          Looking for our security model or want to report a vulnerability? View our <Link href="/security" style={{ color: 'var(--primary-color)' }}>Security &amp; Transparency Page</Link>.
         </div>
       </div>
     </div>

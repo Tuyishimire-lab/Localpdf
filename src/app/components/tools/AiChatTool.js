@@ -8,6 +8,16 @@ import { downloadFile } from '../../../lib/utils';
 import { addHistoryEntry } from '../../../lib/history';
 import { parsePdfTextChunks, generateDocumentSummary, answerDocumentQuestion, exportReportToMarkdown, exportReportToPdf } from '../../../lib/localAiEngine';
 
+let messageCounter = 0;
+function generateMessageId(prefix = 'msg') {
+  messageCounter += 1;
+  return `${Date.now()}_${messageCounter}_${prefix}`;
+}
+
+function getFormattedTime() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 export default function AiChatTool() {
   const [files, setFiles] = useState([]);
   const [pdfDoc, setPdfDoc] = useState(null);
@@ -55,7 +65,7 @@ export default function AiChatTool() {
         id: 1,
         sender: 'ai',
         text: `Welcome back! "${targetFile.name}" is already indexed (${cached.pdfDoc.numPages} pages). Ask me anything!`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        time: getFormattedTime(),
       }]);
       return;
     }
@@ -69,26 +79,26 @@ export default function AiChatTool() {
       setPdfDoc(doc);
       setTotalPages(doc.numPages);
 
-      // Parse text chunks with Auto-OCR fallback callback
-      const extractedChunks = await parsePdfTextChunks(doc, (prog) => {
-        if (prog && prog.status) {
-          setStatusText(prog.status);
-        }
+      // Extract text chunks from all pages
+      const extractedChunks = await parsePdfTextChunks(doc, (current, total) => {
+        setStatusText(`Extracting page ${current} of ${total}...`);
       });
       setChunks(extractedChunks);
 
-      const docSummary = generateDocumentSummary(extractedChunks, doc.numPages);
+      // Generate document summary
+      setStatusText('Generating summary and analyzing topics...');
+      const docSummary = generateDocumentSummary(extractedChunks);
       setSummary(docSummary);
 
-      const categoryLabel = docSummary.category ? ` [${docSummary.category.label}]` : '';
-      const ocrNotice = docSummary.stats?.isScannedOcr ? ' (OCR auto-extracted scanned text)' : '';
+      const categoryLabel = docSummary.category ? ` · Detected: ${docSummary.category.label}` : '';
+      const ocrNotice = docSummary.ocrPageCount > 0 ? ` · ${docSummary.ocrPageCount} scanned page${docSummary.ocrPageCount > 1 ? 's' : ''} OCR-processed` : '';
 
       setMessages([
         {
           id: 1,
           sender: 'ai',
           text: `Hello! I've indexed "${targetFile.name}" (${doc.numPages} pages)${categoryLabel}${ocrNotice}. Ask me anything about this document!`,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          time: getFormattedTime(),
         },
       ]);
 
@@ -175,10 +185,10 @@ export default function AiChatTool() {
     if (!textToSend || !pdfDoc) return;
 
     const userMsg = {
-      id: Date.now(),
+      id: generateMessageId('user'),
       sender: 'user',
       text: textToSend,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: getFormattedTime(),
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -192,11 +202,11 @@ export default function AiChatTool() {
     const { answer, relevantPageNum } = answerDocumentQuestion(textToSend, chunks);
 
     const aiMsg = {
-      id: Date.now() + 1,
+      id: generateMessageId('ai'),
       sender: 'ai',
       text: answer,
       relevantPageNum,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: getFormattedTime(),
     };
 
     setMessages((prev) => [...prev, aiMsg]);

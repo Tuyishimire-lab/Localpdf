@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, GitCompare, Upload, Info, Loader, AlertCircle } from 'lucide-react';
 
@@ -150,7 +150,7 @@ export default function CompareTool() {
     }
   };
 
-  const drawPage = (idx) => {
+  const drawPage = useCallback((idx) => {
     if (!pages[idx]) return;
     const { canvasA, canvasB, canvasDiff } = pages[idx];
     [{ ref: canvasARef, src: canvasA }, { ref: canvasBRef, src: canvasB }, { ref: canvasDiffRef, src: canvasDiff }].forEach(({ ref, src }) => {
@@ -159,11 +159,11 @@ export default function CompareTool() {
       ref.current.height = src.height;
       ref.current.getContext('2d').drawImage(src, 0, 0);
     });
-  };
+  }, [pages]);
 
   useEffect(() => {
     if (status === 'done' && pages[currentPage]) drawPage(currentPage);
-  }, [currentPage, status, pages]);
+  }, [currentPage, status, pages, drawPage]);
 
   return (
     <div style={{ width: '100%' }}>
