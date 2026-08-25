@@ -618,6 +618,9 @@ export default function RedactTool() {
         isComplete={!!processedBlob}
         onDownload={handleDownload}
         downloadLabel="Download Redacted PDF"
+        resultBlob={processedBlob}
+        resultFileName="redacted_sanitized.pdf"
+        currentToolId="redact"
       />
     </Workspace>
   );

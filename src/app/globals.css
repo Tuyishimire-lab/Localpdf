@@ -2304,5 +2304,228 @@ html, body {
   }
 }
 
+/* ==========================================================================
+   HOMEPAGE TOOL DISCOVERY (SEARCH, CATEGORY PILLS & BADGES)
+   ========================================================================== */
 
+.tools-discovery-container {
+  max-width: 1100px;
+  margin: 0 auto 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+}
 
+.tools-search-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+}
+
+.tools-search-icon {
+  position: absolute;
+  left: 1.1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: var(--transition-smooth);
+}
+
+.tools-search-input {
+  width: 100%;
+  padding: 0.85rem 3rem 0.85rem 2.85rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-pill, 50px);
+  color: var(--text-main);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: var(--transition-smooth);
+  outline: none;
+}
+
+.tools-search-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.15), 0 8px 25px rgba(0, 0, 0, 0.1);
+  background: var(--bg-card-hover);
+}
+
+.tools-search-clear {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: var(--transition-smooth);
+}
+
+.tools-search-clear:hover {
+  color: var(--primary-color);
+  background: rgba(255, 71, 87, 0.1);
+}
+
+.tools-category-pills {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.tools-category-pill {
+  padding: 0.5rem 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 50px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  user-select: none;
+}
+
+.tools-category-pill:hover {
+  border-color: var(--primary-color);
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+.tools-category-pill.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+}
+
+.tool-badge-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.tool-badge-ai {
+  background: linear-gradient(135deg, rgba(155, 89, 182, 0.2), rgba(255, 71, 87, 0.2));
+  color: #e056fd;
+  border: 1px solid rgba(224, 86, 253, 0.3);
+}
+
+.tool-badge-privacy {
+  background: rgba(46, 213, 115, 0.15);
+  color: #2ed573;
+  border: 1px solid rgba(46, 213, 115, 0.3);
+}
+
+.tool-badge-popular {
+  background: rgba(255, 165, 2, 0.15);
+  color: #ffa502;
+  border: 1px solid rgba(255, 165, 2, 0.3);
+}
+
+.tool-badge-new {
+  background: rgba(52, 152, 219, 0.15);
+  color: #3498db;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.tools-empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--border-radius-lg);
+  max-width: 500px;
+  margin: 1.5rem auto;
+}
+
+/* ==========================================================================
+   WORKFLOW CHAINING (SUGGESTED NEXT STEPS)
+   ========================================================================== */
+
+.chain-workflow-section {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+  width: 100%;
+}
+
+.chain-workflow-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chain-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+@media (max-width: 480px) {
+  .chain-action-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chain-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-md);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.chain-action-btn:hover {
+  background: rgba(255, 71, 87, 0.12);
+  border-color: var(--primary-color);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.chain-action-btn-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

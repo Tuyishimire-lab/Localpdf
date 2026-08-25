@@ -172,6 +172,9 @@ export default function RotateTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Rotated PDF"
+        resultBlob={processedBlob}
+        resultFileName="rotated_document.pdf"
+        currentToolId="rotate"
       />
     </>
   );

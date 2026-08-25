@@ -189,6 +189,9 @@ export default function CompressTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Compressed PDF"
+        resultBlob={processedBlob}
+        resultFileName="compressed_document.pdf"
+        currentToolId="compress"
       />
     </>
   );

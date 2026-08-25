@@ -592,6 +592,9 @@ export default function SignTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Signed PDF"
+        resultBlob={processedBlob}
+        resultFileName="signed_document.pdf"
+        currentToolId="sign"
       />
     </>
   );

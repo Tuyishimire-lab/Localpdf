@@ -357,6 +357,9 @@ export default function OrganizeTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Organized PDF"
+        resultBlob={processedBlob}
+        resultFileName="organized_document.pdf"
+        currentToolId="organize"
       />
     </>
   );

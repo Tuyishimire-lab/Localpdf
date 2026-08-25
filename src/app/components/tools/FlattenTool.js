@@ -152,6 +152,9 @@ export default function FlattenTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Flattened PDF"
+        resultBlob={resultBlob}
+        resultFileName="flattened_document.pdf"
+        currentToolId="flatten"
       />
     </>
   );

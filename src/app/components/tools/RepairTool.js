@@ -159,6 +159,9 @@ export default function RepairTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Repaired PDF"
+        resultBlob={resultBlob}
+        resultFileName="repaired_document.pdf"
+        currentToolId="repair"
       />
     </>
   );

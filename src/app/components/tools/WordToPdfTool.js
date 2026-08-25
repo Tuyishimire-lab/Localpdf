@@ -1389,9 +1389,12 @@ export default function WordToPdfTool() {
         onClose={() => setModalOpen(false)}
         title="Office Document Conversion"
         description="Extracting document formatting, layout, alignments, and building PDF pages client-side..."
-        isComplete={!processing}
+        isComplete={!processing && !!processedBlob}
         downloadLabel="Download PDF"
         onDownload={handleDownload}
+        resultBlob={processedBlob}
+        resultFileName="converted_document.pdf"
+        currentToolId="word-to-pdf"
       />
     </>
   );

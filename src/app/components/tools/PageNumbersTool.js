@@ -246,6 +246,9 @@ export default function PageNumbersTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Numbered PDF"
+        resultBlob={processedBlob}
+        resultFileName="numbered_document.pdf"
+        currentToolId="page-numbers"
       />
     </>
   );

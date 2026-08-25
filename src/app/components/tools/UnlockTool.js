@@ -215,6 +215,9 @@ export default function UnlockTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Unlocked PDF"
+        resultBlob={processedBlob}
+        resultFileName="unlocked_document.pdf"
+        currentToolId="unlock"
       />
     </>
   );

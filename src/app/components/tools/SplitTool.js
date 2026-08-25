@@ -188,6 +188,9 @@ export default function SplitTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel={isZipOutput ? "Download ZIP" : "Download Extracted PDF"}
+        resultBlob={processedBlob}
+        resultFileName={isZipOutput ? "split_pages.zip" : "extracted_pages.pdf"}
+        currentToolId="split"
       />
     </>
   );

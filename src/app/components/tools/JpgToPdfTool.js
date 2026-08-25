@@ -323,6 +323,9 @@ export default function JpgToPdfTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Compiled PDF"
+        resultBlob={processedBlob}
+        resultFileName="images_converted.pdf"
+        currentToolId="jpg-to-pdf"
       />
     </>
   );

@@ -978,6 +978,9 @@ export default function EditTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Edited PDF"
+        resultBlob={processedBlob}
+        resultFileName="edited_document.pdf"
+        currentToolId="edit"
       />
     </>
   );

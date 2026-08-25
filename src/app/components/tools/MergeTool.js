@@ -188,6 +188,9 @@ export default function MergeTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Merged PDF"
+        resultBlob={processedBlob}
+        resultFileName="merged_document.pdf"
+        currentToolId="merge"
       />
     </>
   );

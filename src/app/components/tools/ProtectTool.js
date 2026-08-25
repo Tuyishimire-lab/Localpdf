@@ -162,6 +162,9 @@ export default function ProtectTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Protected PDF"
+        resultBlob={processedBlob}
+        resultFileName="protected_document.pdf"
+        currentToolId="protect"
       />
     </>
   );

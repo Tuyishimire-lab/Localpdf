@@ -274,6 +274,9 @@ export default function WatermarkTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Watermarked PDF"
+        resultBlob={processedBlob}
+        resultFileName="watermarked_document.pdf"
+        currentToolId="watermark"
       />
     </>
   );
