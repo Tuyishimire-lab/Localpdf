@@ -29,6 +29,14 @@ test.describe('Homepage', () => {
 });
 
 // ── Tool Pages ──────────────────────────────────────────────────────────────
+test.describe('PDF Recipes Pipeline Page', () => {
+  test('recipes page loads with heading and preset pipelines', async ({ page }) => {
+    await page.goto('/recipes');
+    await expect(page.locator('h1')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Legal Discovery Pack')).toBeVisible();
+  });
+});
+
 const tools = [
   // Original tools
   { name: 'Compress', path: '/tools/compress' },
@@ -46,9 +54,18 @@ const tools = [
   { name: 'PDF to JPG', path: '/tools/pdf-to-jpg' },
   { name: 'Unlock', path: '/tools/unlock' },
   { name: 'Page Numbers', path: '/tools/page-numbers' },
-  // New tools added last session
+  // Remaining tools
   { name: 'PDF to Word', path: '/tools/pdf-to-word' },
   { name: 'PDF to Excel', path: '/tools/pdf-to-excel' },
+  { name: 'Crop PDF', path: '/tools/crop' },
+  { name: 'Extract Images', path: '/tools/extract-images' },
+  { name: 'Fill PDF Forms', path: '/tools/fill-form' },
+  { name: 'Metadata Editor', path: '/tools/metadata' },
+  { name: 'Bates Numbering', path: '/tools/bates-numbering' },
+  { name: 'Split by Size', path: '/tools/split-by-size' },
+  { name: 'Grayscale PDF', path: '/tools/grayscale' },
+  { name: 'Redact & Sanitize', path: '/tools/redact' },
+  { name: 'AI PDF Chat', path: '/tools/ai-chat' },
   { name: 'Flatten', path: '/tools/flatten' },
   { name: 'Compare PDFs', path: '/tools/compare' },
   { name: 'Word to PDF', path: '/tools/word-to-pdf' },
@@ -101,6 +118,9 @@ test.describe('Blog', () => {
 // ── Static Pages ────────────────────────────────────────────────────────────
 const staticPages = [
   { name: 'About', path: '/about', titleMatch: /about/i },
+  { name: 'Security', path: '/security', titleMatch: /security/i },
+  { name: 'Compare Hub', path: '/compare', titleMatch: /compare/i },
+  { name: 'History', path: '/history', titleMatch: /history/i },
   { name: 'Contact', path: '/contact', titleMatch: /contact/i },
   { name: 'Privacy', path: '/privacy', titleMatch: /privacy/i },
   { name: 'Terms', path: '/terms', titleMatch: /terms/i },
@@ -173,4 +193,20 @@ test.describe('Mobile layout', () => {
     const hamburger = page.locator('[class*="hamburger"], [aria-label*="menu"], button[class*="mobile"]').first();
     await expect(hamburger).toBeVisible({ timeout: 5_000 });
   });
+});
+
+// ── File Upload Integration Smoke ───────────────────────────────────────────
+test('Merge PDF accepts a real uploaded PDF into the workspace queue', async ({ page }) => {
+  await page.goto('/tools/merge');
+  const minimalPdf = Buffer.from(
+    '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Count 1/Kids[3 0 R]>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 200 200]/Parent 2 0 R>>endobj\nxref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n182\n%%EOF\n',
+    'utf8'
+  );
+  await page.locator('input[type="file"]').first().setInputFiles({
+    name: 'sample-smoke.pdf',
+    mimeType: 'application/pdf',
+    buffer: minimalPdf,
+  });
+  await expect(page.getByText('1 file selected')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('sample-smoke.pdf')).toBeVisible({ timeout: 10_000 });
 });

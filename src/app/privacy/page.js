@@ -1,9 +1,12 @@
 export const dynamic = 'force-static';
 
-export const metadata = {
+import { buildPageMetadata } from '../../lib/seo';
+
+export const metadata = buildPageMetadata({
   title: 'Privacy Policy | LocalPDF',
   description: 'Learn about our commitment to privacy. LocalPDF executes all PDF operations 100% locally in your web browser. No documents are ever uploaded to any server.',
-};
+  path: '/privacy',
+});
 
 export default function PrivacyPage() {
   return (
@@ -57,6 +60,10 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>Theme Preference (<code>localpdf_theme</code>):</strong> Remembers your light/dark mode selection.</li>
           <li><strong>Processing History (<code>localpdf_history</code>):</strong> Keeps a local record of recent tool operations (file name, file size, timestamp). This data remains strictly in your browser and is never transmitted to us. You can clear your history at any time using the Clear History button or your browser settings.</li>
+          <li><strong>Cookie Consent Choice (<code>localpdf-cookie-consent</code>):</strong> Stores whether you accepted or declined optional analytics cookies.</li>
+          <li><strong>PWA Prompt Dismissal (<code>localpdf-pwa-prompt-dismissed</code>):</strong> Remembers if you dismissed the offline app install prompt.</li>
+          <li><strong>Strict Air-Gapped Mode (<code>localpdf_airgapped</code>):</strong> Stores your opt-in Strict Air-Gapped Mode preference, which forcefully disables optional analytics and blocks non-local OCR language CDN fetches.</li>
+          <li><strong>Saved PDF Recipes (<code>localpdf_recipes</code>):</strong> Stores custom multi-step PDF workflow pipelines you create and save locally in the Recipes builder.</li>
         </ul>
 
         <h3>B. Contact Form &amp; Support Inquiries</h3>
@@ -66,7 +73,7 @@ export default function PrivacyPage() {
 
         <h3>C. Aggregated Web Analytics</h3>
         <p>
-          To maintain reliability, evaluate performance, and optimize user experience, we use privacy-conscious analytics tools (such as Google Analytics, OmniRoute, and Vercel Analytics). These services record non-personally identifiable technical telemetry, including:
+          Only after you explicitly accept cookies via our consent banner, we use privacy-conscious analytics tools (such as Google Analytics and Vercel Analytics) to evaluate reliability and performance. If you decline, no analytics scripts are loaded. When enabled, these services record non-personally identifiable technical telemetry, including:
         </p>
         <ul>
           <li>Browser type, operating system, and device category</li>
@@ -77,12 +84,9 @@ export default function PrivacyPage() {
           This telemetry is aggregated and cannot be used to identify you personally or access any document you process.
         </p>
 
-        <h2>4. Cookies &amp; Third-Party Advertising</h2>
+        <h2>4. Cookies &amp; Optional Advertising</h2>
         <p>
-          LocalPDF may display non-intrusive advertisements (such as Google AdSense) to support the continuous free availability of our service.
-        </p>
-        <p>
-          Third-party ad networks may use cookies and web beacons to serve ads based on a user&apos;s prior visits to this or other websites. You may manage or opt out of personalized advertising by visiting{' '}
+          LocalPDF currently operates without third-party behavioral ad trackers loaded by default. If optional third-party advertising networks (such as Google AdSense) are enabled in the future, they would only load with explicit user consent. You may manage or opt out of personalized advertising by visiting{' '}
           <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)' }}>
             Google Ads Settings
           </a>{' '}

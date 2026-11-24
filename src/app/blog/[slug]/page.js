@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import ShareButtons from '../../components/ShareButtons';
 
 // Wraps every markdown table in a scrollable container.
 // This prevents the empty-right-area bug caused by display:block on <table>.
@@ -17,6 +18,8 @@ const mdxComponents = {
 
 const BASE = 'https://www.uselocalpdf.com';
 
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   const posts = getAllPosts();
   return posts.map((p) => ({ slug: p.slug }));
@@ -27,7 +30,7 @@ export async function generateMetadata({ params }) {
   const post = getPostBySlug(slug);
   if (!post) return {};
 
-  const ogImage = `${BASE}/logo.png`;
+  const ogImage = `${BASE}/og-image.png`;
 
   return {
     title: `${post.title} | LocalPDF Blog`,
@@ -42,7 +45,7 @@ export async function generateMetadata({ params }) {
       siteName: 'LocalPDF',
       publishedTime: post.date,
       authors: ['LocalPDF Team'],
-      images: [{ url: ogImage, width: 800, height: 800, alt: post.title }],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: post.title }],
     },
     twitter: {
       card: 'summary_large_image',
@@ -64,6 +67,7 @@ export default async function BlogPost({ params }) {
     '@type': 'Article',
     headline: post.title,
     description: post.description,
+    image: `${BASE}/og-image.png`,
     datePublished: post.date,
     dateModified: post.date,
     author: { '@type': 'Organization', name: 'LocalPDF', url: BASE },
@@ -122,7 +126,8 @@ export default async function BlogPost({ params }) {
         </article>
 
         <div className="blog-post-footer">
-          <p>Found this helpful? Try LocalPDF&apos;s free PDF tools, all processing happens in your browser with zero file uploads.</p>
+          <ShareButtons title={post.title} url={`${BASE}/blog/${post.slug}`} />
+          <p style={{ marginTop: '1rem' }}>Found this helpful? Try LocalPDF&apos;s free PDF tools, all processing happens in your browser with zero file uploads.</p>
           <Link href="/" className="btn-primary" style={{ display: 'inline-flex', marginTop: '0.75rem' }}>
             Explore All Tools →
           </Link>

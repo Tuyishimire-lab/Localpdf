@@ -1,0 +1,46 @@
+---
+title: "How to Scrub Hidden PDF Metadata Before Sharing"
+description: "Discover what hidden fields PDF files store behind the scenes, why metadata causes accidental leaks in legal and business workflows, and how to strip it completely offline in seconds."
+date: "2026-08-26"
+readTime: "6 min"
+category: "Privacy"
+---
+
+When you export a PDF from Microsoft Word, Google Docs, Apple Pages, Adobe Acrobat, or an enterprise CRM, the rendered pages on screen represent only part of the file. Tucked inside the PDF Document Information dictionary (`Info`) and XMP properties is metadata that travels invisibly wherever the file is forwarded.
+
+Before sending contract redlines, RFP responses, court filings, HR memos, or anonymized research reports externally, stripping hidden metadata prevents unintended disclosure. With [LocalPDF Metadata Editor & Scrubber](/tools/metadata), you can inspect every metadata field and scrub it cleanly inside your browser without uploading the document anywhere.
+
+## What Hidden PDF Metadata Actually Reveals
+
+Most people are surprised when they inspect a freshly exported PDF for the first time. Common fields and real-world risks include:
+
+| Metadata Field | Typical Content Inside File | Potential Privacy / Operational Leak |
+|---|---|---|
+| **Author** | OS username or employee full name | Exposes who drafted an anonymous whistleblower or audit report |
+| **Title & Subject** | Original working file name or internal subject | Reveals project code names (`"Project Falcon - Draft 3"`) |
+| **Keywords** | Internal tags, client codes, search labels | Leaks internal CRM categories or pricing tiers |
+| **Creator** | Source app (e.g., `Microsoft Word for Mac 16.x`) | Reveals internal software stack or drafting workflow |
+| **Producer** | PDF conversion library and OS build details | Fingerprints corporate tooling or outdated software versions |
+| **CreationDate / ModDate** | Exact timestamps with local timezone offset | Exposes late-night drafting times or geographic timezone (`UTC+2`, `UTC-5`) |
+
+In competitive negotiations, even a timestamp or former employee's `Author` string can contradict an intended timeline or reveal internal review history.
+
+## Step-by-Step: Inspect and Scrub PDF Metadata Offline
+
+1. Open the [Metadata Editor & Scrubber](/tools/metadata) and drop your PDF.
+2. Immediately view the decoded fields (`Title`, `Author`, `Subject`, `Keywords`, `Creator`, `Producer`, `CreationDate`, and `ModificationDate`) directly in the panel.
+3. Choose one of two options:
+   - **One-Click Privacy Scrub:** Click **Scrub All Metadata** to erase all text properties (`Title`, `Author`, `Subject`, `Keywords`, `Creator`, `Producer`) and reset creation/modification timestamps cleanly.
+   - **Targeted Metadata Editing:** If you want a polished public `Title` and `Author` (for example, your company name) while clearing internal tags, update only the fields you wish to publish and save.
+4. Download your cleaned PDF or inspect it again to confirm zero identifying entries remain.
+
+## What Metadata Scrubbing Does NOT Remove (Defense-in-Depth Checklist)
+
+Scrubbing the PDF Info dictionary is fast and lossless, meaning text stays sharp and file size barely changes. However, for high-stakes confidentiality, do not treat metadata scrubbing as a substitute for full document sanitization:
+
+- **Hidden text behind black shapes:** Drawing an opaque black rectangle in an editor does not erase underlying text. Always use [Redact & Sanitize](/tools/redact), which permanently blacks out selected areas by rasterizing pages so hidden text cannot be copied or extracted.
+- **Interactive comments & unflattened form data:** Review notes, sticky annotations, and editable AcroForm values can carry reviewer names. Run [Flatten PDF](/tools/flatten) to bake form values into static visual ink.
+- **Unauthorized access in transit:** After cleaning metadata and flattening annotations, encrypt outgoing attachments with 256-bit AES using [Protect PDF](/tools/protect).
+- **Repeated workflows:** Chain **Watermark -> Scrub Metadata -> Lossless Compress -> AES-256 Encrypt** automatically using the **Confidential Client Share** preset inside [PDF Recipes](/recipes).
+
+You can audit every step of LocalPDF's zero-upload architecture using browser DevTools as outlined on our [Security & Transparency](/security) page.

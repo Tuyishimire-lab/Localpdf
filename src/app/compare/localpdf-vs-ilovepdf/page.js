@@ -2,12 +2,13 @@ export const dynamic = 'force-static';
 
 import Link from 'next/link';
 import { ArrowLeft, Check, X } from 'lucide-react';
+import { buildPageMetadata } from '../../../lib/seo';
 
-export const metadata = {
+export const metadata = buildPageMetadata({
   title: 'LocalPDF vs iLovePDF - Privacy, Features & Pricing Comparison',
   description: 'A detailed comparison of LocalPDF and iLovePDF covering privacy, file uploads, tool features, file size limits, pricing, and processing speed.',
-  alternates: { canonical: 'https://www.uselocalpdf.com/compare/localpdf-vs-ilovepdf' },
-};
+  path: '/compare/localpdf-vs-ilovepdf',
+});
 
 const rows = [
   // Architecture & Privacy
@@ -22,15 +23,17 @@ const rows = [
   { feature: 'Task limit', localpdf: 'None', competitor: 'Varies', note: null },
   { feature: 'Account required', localpdf: false, competitor: false, note: 'Both: no account needed' },
   // Tools
-  { feature: 'Compress / Merge / Split', localpdf: true, competitor: true, note: 'LocalPDF: browser-based instant' },
-  { feature: 'OCR', localpdf: true, competitor: true, note: 'LocalPDF: Tesseract.js, offline' },
-  { feature: 'Sign PDF', localpdf: true, competitor: true, note: null },
+  { feature: 'Compress / Merge / Split', localpdf: true, competitor: true, note: 'Lossless QPDF WASM + instant' },
+  { feature: 'Batch Multi-PDF ZIP', localpdf: true, competitor: true, note: 'Compress, Watermark, Protect, Rotate, Number' },
+  { feature: 'AES-256 Encryption (WASM)', localpdf: true, competitor: true, note: 'LocalPDF: zero key transmission' },
+  { feature: 'OCR & Searchable PDF', localpdf: true, competitor: true, note: 'Tesseract.js + invisible text PDF' },
+  { feature: 'Sign PDF', localpdf: true, competitor: true, note: 'Draw, type, image upload & date stamps' },
   { feature: 'PDF to Word', localpdf: true, competitor: true, note: 'LocalPDF: no upload needed' },
-  { feature: 'Redact & Sanitize', localpdf: true, competitor: true, note: 'LocalPDF: 100% client-side' },
+  { feature: 'Redact & Sanitize', localpdf: true, competitor: true, note: '2x pixel burn-in + metadata strip' },
   { feature: 'AI Summarizer & Chat', localpdf: true, competitor: false, note: 'LocalPDF: Private, in-browser' },
-  { feature: 'Flatten PDF', localpdf: true, competitor: false, note: null },
-  { feature: 'Repair PDF', localpdf: true, competitor: false, note: null },
-  { feature: 'Compare PDF (visual diff)', localpdf: true, competitor: false, note: null },
+  { feature: 'Flatten PDF', localpdf: true, competitor: false, note: 'AcroForm + annotation flattening' },
+  { feature: 'Repair PDF', localpdf: true, competitor: false, note: 'QPDF WASM structural recovery' },
+  { feature: 'Compare PDF', localpdf: true, competitor: false, note: 'Visual pixel & text diff + report' },
   { feature: 'PDF to PowerPoint', localpdf: false, competitor: true, note: 'iLovePDF exclusive' },
   { feature: 'HTML to PDF', localpdf: false, competitor: true, note: 'iLovePDF exclusive' },
 ];
@@ -55,20 +58,19 @@ export default function VsIlovePdf() {
         <table className="compare-table">
           <thead>
             <tr>
-              <th style={{ width: '40%' }}>Feature</th>
+              <th style={{ width: '38%' }}>Feature</th>
               <th className="compare-th-brand" style={{ width: '20%' }}>LocalPDF</th>
               <th style={{ width: '20%' }}>iLovePDF</th>
+              <th style={{ width: '22%', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 400 }}>Note</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={i}>
-                <td>
-                  <div style={{ fontWeight: 600 }}>{r.feature}</div>
-                  {r.note && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{r.note}</div>}
-                </td>
+              <tr key={i} style={r.highlight ? { background: 'rgba(255,71,87,0.06)' } : {}}>
+                <td className="compare-feature-cell" style={r.highlight ? { fontWeight: 700, color: 'var(--text-main)' } : {}}>{r.feature}</td>
                 <Cell value={r.localpdf} />
                 <Cell value={r.competitor} />
+                <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)', padding: '0.65rem 0.75rem' }}>{r.note || ''}</td>
               </tr>
             ))}
           </tbody>
@@ -83,7 +85,7 @@ export default function VsIlovePdf() {
         <p>iLovePDF&apos;s free tier imposes a 200 MB per-operation limit. LocalPDF has no server-side limit because there is no server; processing is bounded only by your device&apos;s RAM, which typically allows files well beyond 500 MB.</p>
 
         <h2>Tools Available</h2>
-        <p>Both services cover all core PDF operations. iLovePDF has additional conversion formats including PDF to PowerPoint and HTML to PDF. LocalPDF has Repair PDF, Compare PDF, and client-side AI Chat, which iLovePDF does not offer locally. For most users, both cover 95% of everyday needs.</p>
+        <p>Both services cover all core PDF operations. iLovePDF has additional conversion formats including PDF to PowerPoint and HTML to PDF. LocalPDF has Repair PDF, Compare PDF (visual pixel diff and line-by-line text diff), searchable PDF OCR, and client-side AI Chat, which iLovePDF does not offer locally. For most users, both cover 95% of everyday needs.</p>
 
         <h2>Speed</h2>
         <p>iLovePDF&apos;s speed depends on your upload connection, server load, and download speed. LocalPDF&apos;s speed depends on your device&apos;s CPU. On modern hardware, most LocalPDF operations complete faster because there is no upload/download cycle.</p>

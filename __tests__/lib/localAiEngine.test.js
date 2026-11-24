@@ -11,7 +11,23 @@ import {
   generateDocumentSummary,
   answerDocumentQuestion,
   exportReportToMarkdown,
+  exportReportToPdf,
 } from '../../src/lib/localAiEngine.js';
+import { PDFDocument } from 'pdf-lib';
+
+/**
+ * jsdom's Blob does not implement .arrayBuffer(). Use FileReader instead.
+ * @param {Blob} blob
+ * @returns {Promise<ArrayBuffer>}
+ */
+function readBlobArrayBuffer(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(blob);
+  });
+}
 
 /**
  * jsdom's Blob does not implement .text(). Use FileReader instead.
@@ -104,6 +120,29 @@ describe('detectDocumentCategory', () => {
     );
     expect(result.type).toBe('legal');
   });
+
+  test('ignores substring false positives like durability/order/European/syntax and falls back to general', () => {
+    const result = detectDocumentCategory(
+      'This guide examines product durability in order to improve European syntax standards and total reliability.'
+    );
+    expect(result.type).toBe('general');
+  });
+
+  test('classifies competitive retail field reports as sales instead of finance', () => {
+    const result = detectDocumentCategory(
+      'Sales Representative Competitive Field Exercise. Compare Competitor 1 and Competitor 2 retail price, current discount or promotion, bundle gift, and key customer groups.'
+    );
+    expect(result.type).toBe('sales');
+    expect(result.prompts.some((p) => /competitors|promotions/i.test(p))).toBe(true);
+  });
+
+  test('classifies engineering specs as technical', () => {
+    const result = detectDocumentCategory(
+      'System architecture uses TypeScript API endpoints, PostgreSQL database schema, and automated repository deployment.'
+    );
+    expect(result.type).toBe('technical');
+    expect(result.icon).toBe('💻');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -185,6 +224,30 @@ describe('generateDocumentSummary', () => {
     const chunks = makeChunks(['some text here for testing purposes with many words included']);
     const result = generateDocumentSummary(chunks, 7);
     expect(result.stats.totalPages).toBe(7);
+  });
+
+  test('infers totalPages and computes ocrPageCount when totalPages is omitted', () => {
+    const chunks = [
+      { pageNum: 1, chunkIndex: 0, text: 'native page one words here', wordCount: 5, isOcr: false },
+      { pageNum: 2, chunkIndex: 0, text: 'scanned ocr page two words', wordCount: 5, isOcr: true },
+      { pageNum: 2, chunkIndex: 1, text: 'more ocr words on page two', wordCount: 6, isOcr: true },
+      { pageNum: 4, chunkIndex: 0, text: 'scanned ocr page four words', wordCount: 5, isOcr: true },
+    ];
+    const result = generateDocumentSummary(chunks);
+    expect(result.stats.totalPages).toBe(4);
+    expect(result.stats.ocrPageCount).toBe(2);
+    expect(result.stats.isScannedOcr).toBe(true);
+  });
+
+  test('generates topic-aware suggestedPrompts from extracted document content', () => {
+    const chunks = makeChunks([
+      'Competitive field exercise analyzing battery endurance objections and smartphone durability across retail stores.',
+    ]);
+    const result = generateDocumentSummary(chunks, 1);
+    expect(Array.isArray(result.suggestedPrompts)).toBe(true);
+    expect(result.suggestedPrompts).toHaveLength(4);
+    expect(result.suggestedPrompts[0]).toMatch(/main summary/i);
+    expect(result.suggestedPrompts[1]).toMatch(/What does this document say about/i);
   });
 });
 
@@ -326,5 +389,32 @@ describe('exportReportToMarkdown', () => {
     expect(text).toContain('fallback.pdf');
     // Category should default to 'General'
     expect(text).toContain('General');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// exportReportToPdf
+// ---------------------------------------------------------------------------
+describe('exportReportToPdf', () => {
+  test('generates a valid PDF even when messages and summary contain emojis and Unicode', async () => {
+    const summary = {
+      category: { icon: '📜', label: 'Legal Contract / Agreement' },
+      stats: { totalPages: 3, wordCount: 450, readingTimeMinutes: 3 },
+      overview: 'Smart quotes “hello” — dash… and emoji 🚀 in overview.',
+      keyPoints: ['Clause ①: Pay $500 monthly 💡', 'Terminate with 30 days notice 📄'],
+      topTopics: ['Contract', 'Liability'],
+    };
+    const messages = [
+      { sender: 'user', time: '10:00', text: '👤 What is the fee? 💰' },
+      { sender: 'ai', time: '10:01', text: '🤖 Based on [Page 1]: “five hundred dollars” — due monthly ✅.' },
+    ];
+
+    const blob = await exportReportToPdf(summary, messages, 'contract_🚀.pdf');
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.type).toBe('application/pdf');
+
+    const buffer = await readBlobArrayBuffer(blob);
+    const loadedDoc = await PDFDocument.load(buffer);
+    expect(loadedDoc.getPageCount()).toBeGreaterThanOrEqual(1);
   });
 });

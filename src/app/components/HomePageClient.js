@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSharedFile } from '../../context/FileContext';
+import { toast } from '../../context/ToastContext';
 import { 
   Layers, 
   Scissors, 
@@ -30,11 +31,18 @@ import {
   X,
   ShieldCheck,
   Zap,
-  FolderSync
+  FolderSync,
+  Table,
+  Crop,
+  FileCheck2,
+  FileCode,
+  Contrast,
+  Workflow,
+  ArrowRight,
 } from 'lucide-react';
 
 const CATEGORIES = [
-  { id: 'all', label: 'All Tools (21)' },
+  { id: 'all', label: 'All Tools (29)' },
   { id: 'organize', label: 'Organize & Merge' },
   { id: 'convert', label: 'Convert' },
   { id: 'optimize', label: 'Optimize & Edit' },
@@ -171,7 +179,7 @@ const tools = [
     href: '/tools/protect',
     category: 'security',
     keywords: ['encrypt', 'password', 'secure', 'aes', 'lock', 'restrict'],
-    badge: { label: 'AES-128', type: 'privacy' },
+    badge: { label: 'AES-256', type: 'privacy' },
   },
   {
     id: 'unlock',
@@ -253,16 +261,154 @@ const tools = [
     keywords: ['fix', 'corrupt', 'recovery', 'damaged', 'broken'],
     badge: null,
   },
+  {
+    id: 'pdf-to-excel',
+    title: 'PDF to Excel / CSV',
+    description: 'Extract tabular PDF data into multi-sheet .xlsx workbooks or .csv files locally.',
+    icon: Table,
+    href: '/tools/pdf-to-excel',
+    category: 'convert',
+    keywords: ['excel', 'xlsx', 'csv', 'table', 'spreadsheet', 'financial'],
+    badge: { label: 'New', type: 'new' },
+  },
+  {
+    id: 'crop',
+    title: 'Crop PDF',
+    description: 'Trim white margins and resize PDF pages visually using lossless CropBox settings.',
+    icon: Crop,
+    href: '/tools/crop',
+    category: 'organize',
+    keywords: ['trim', 'margins', 'cut margins', 'cropbox', 'resize'],
+    badge: { label: 'New', type: 'new' },
+  },
+  {
+    id: 'extract-images',
+    title: 'Extract Images',
+    description: 'Pull all embedded photos and graphics out of any PDF as lossless PNGs or ZIP.',
+    icon: Image,
+    href: '/tools/extract-images',
+    category: 'convert',
+    keywords: ['photos', 'rip images', 'save pictures', 'embedded images', 'png'],
+    badge: { label: 'New', type: 'new' },
+  },
+  {
+    id: 'fill-form',
+    title: 'Fill PDF Forms',
+    description: 'Complete interactive AcroForm fields, checkboxes, and dropdowns, plus optional flatten.',
+    icon: FileCheck2,
+    href: '/tools/fill-form',
+    category: 'optimize',
+    keywords: ['form', 'acroform', 'checkbox', 'fillable', 'questionnaire'],
+    badge: { label: 'New', type: 'new' },
+  },
+  {
+    id: 'metadata',
+    title: 'Metadata Editor & Scrubber',
+    description: 'Inspect, edit, or completely scrub Title, Author, Creator, and Producer metadata.',
+    icon: FileCode,
+    href: '/tools/metadata',
+    category: 'security',
+    keywords: ['exif', 'properties', 'author', 'scrub', 'privacy', 'metadata'],
+    badge: { label: 'Privacy', type: 'privacy' },
+  },
+  {
+    id: 'bates-numbering',
+    title: 'Bates Numbering',
+    description: 'Apply continuous legal Bates prefixes, padded IDs, and headers/footers across PDFs.',
+    icon: Hash,
+    href: '/tools/bates-numbering',
+    category: 'optimize',
+    keywords: ['legal', 'discovery', 'bates', 'header', 'footer', 'stamp'],
+    badge: { label: 'Legal', type: 'new' },
+  },
+  {
+    id: 'split-by-size',
+    title: 'Split by Size / Bookmarks',
+    description: 'Chunk large PDFs into MB limits for email or split automatically by bookmark chapters.',
+    icon: Scissors,
+    href: '/tools/split-by-size',
+    category: 'organize',
+    keywords: ['mb limit', 'email size', 'chapters', 'bookmarks', 'chunk'],
+    badge: { label: 'New', type: 'new' },
+  },
+  {
+    id: 'grayscale',
+    title: 'Grayscale PDF',
+    description: 'Convert color PDFs into calibrated black-and-white pages for economical printing.',
+    icon: Contrast,
+    href: '/tools/grayscale',
+    category: 'optimize',
+    keywords: ['black and white', 'monochrome', 'print', 'save ink', 'bw'],
+    badge: { label: 'New', type: 'new' },
+  },
 ];
+
+const SINGLE_PDF_DROP_TOOLS = [
+  { label: 'Run Multi-Step Recipe', href: '/recipes' },
+  { label: 'Compress PDF', href: '/tools/compress' },
+  { label: 'Merge PDF (Add More)', href: '/tools/merge' },
+  { label: 'Split PDF', href: '/tools/split' },
+  { label: 'Split by Size / Bookmarks', href: '/tools/split-by-size' },
+  { label: 'Organize PDF', href: '/tools/organize' },
+  { label: 'Crop PDF', href: '/tools/crop' },
+  { label: 'AI Chat & Summary', href: '/tools/ai-chat' },
+  { label: 'OCR PDF', href: '/tools/ocr' },
+  { label: 'PDF to Word', href: '/tools/pdf-to-word' },
+  { label: 'PDF to Excel / CSV', href: '/tools/pdf-to-excel' },
+  { label: 'PDF to JPG / PNG', href: '/tools/pdf-to-jpg' },
+  { label: 'Extract Images', href: '/tools/extract-images' },
+  { label: 'Fill PDF Forms', href: '/tools/fill-form' },
+  { label: 'Edit PDF', href: '/tools/edit' },
+  { label: 'Sign PDF', href: '/tools/sign' },
+  { label: 'Watermark', href: '/tools/watermark' },
+  { label: 'Page Numbers', href: '/tools/page-numbers' },
+  { label: 'Bates Numbering', href: '/tools/bates-numbering' },
+  { label: 'Rotate PDF', href: '/tools/rotate' },
+  { label: 'Grayscale PDF', href: '/tools/grayscale' },
+  { label: 'Metadata & Scrub', href: '/tools/metadata' },
+  { label: 'Protect PDF (AES-256)', href: '/tools/protect' },
+  { label: 'Unlock PDF', href: '/tools/unlock' },
+  { label: 'Redact & Sanitize', href: '/tools/redact' },
+  { label: 'Flatten PDF', href: '/tools/flatten' },
+  { label: 'Repair PDF', href: '/tools/repair' },
+];
+
+function subscribeUrlQuery(callback) {
+  window.addEventListener('popstate', callback);
+  return () => window.removeEventListener('popstate', callback);
+}
+
+function getUrlQuerySnapshot() {
+  if (typeof window === 'undefined') return '';
+  return new URLSearchParams(window.location.search).get('q') || '';
+}
+
+function getUrlQueryServerSnapshot() {
+  return '';
+}
 
 export default function HomePageClient() {
   const router = useRouter();
-  const { setFile } = useSharedFile();
+  const { setFile, setFiles } = useSharedFile();
   const [dragOver, setDragOver] = useState(false);
   const [droppedFile, setDroppedFile] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const urlQuery = useSyncExternalStore(
+    subscribeUrlQuery,
+    getUrlQuerySnapshot,
+    getUrlQueryServerSnapshot
+  );
+  const [userSearchQuery, setUserSearchQuery] = useState(null);
+  const searchQuery = userSearchQuery !== null ? userSearchQuery : urlQuery;
   const [selectedCategory, setSelectedCategory] = useState('all');
+
+  const clearSearch = () => {
+    setUserSearchQuery('');
+    if (typeof window !== 'undefined' && window.location.search.includes('q=')) {
+      window.history.replaceState({}, '', window.location.pathname);
+      window.dispatchEvent(new Event('popstate'));
+    }
+  };
 
   // Filter tools based on search query and category
   const filteredTools = useMemo(() => {
@@ -302,14 +448,38 @@ export default function HomePageClient() {
       e.stopPropagation();
       setDragOver(false);
 
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        const file = e.dataTransfer.files[0];
-        if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-          setDroppedFile(file);
-          setModalOpen(true);
-        } else {
-          alert('Please drop a valid PDF document to start.');
-        }
+      const dropped = Array.from(e.dataTransfer?.files || []);
+      if (dropped.length === 0) return;
+
+      const isPdf = (f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+      const isImage = (f) =>
+        f.type.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(f.name);
+      const isDoc = (f) =>
+        /\.(docx|txt|md)$/i.test(f.name) ||
+        f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        f.type === 'text/plain';
+
+      const pdfs = dropped.filter(isPdf);
+      const images = dropped.filter(isImage);
+      const docs = dropped.filter(isDoc);
+
+      if (pdfs.length > 1) {
+        setFiles(pdfs);
+        toast.info(`Loaded ${pdfs.length} PDFs into Merge PDF.`);
+        router.push('/tools/merge');
+      } else if (pdfs.length === 1) {
+        setDroppedFile(pdfs[0]);
+        setModalOpen(true);
+      } else if (images.length > 0) {
+        setFiles(images);
+        toast.info(`Loaded ${images.length} image${images.length > 1 ? 's' : ''} into JPG to PDF.`);
+        router.push('/tools/jpg-to-pdf');
+      } else if (docs.length > 0) {
+        setFiles([docs[0]]);
+        toast.info('Loaded document into Word/TXT to PDF.');
+        router.push('/tools/word-to-pdf');
+      } else {
+        toast.error('Please drop a PDF, image (JPG/PNG/WebP), or document (.docx, .txt, .md) to start.');
       }
     };
 
@@ -322,7 +492,16 @@ export default function HomePageClient() {
       window.removeEventListener('dragleave', handleDragLeave);
       window.removeEventListener('drop', handleDrop);
     };
-  }, []);
+  }, [router, setFiles]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') setModalOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [modalOpen]);
 
   const handleSelectTool = (route) => {
     if (droppedFile) {
@@ -350,15 +529,16 @@ export default function HomePageClient() {
           <input
             type="text"
             className="tools-search-input"
-            placeholder="Search all 21 tools (e.g. compress, merge, ocr, word, redact)..."
+            placeholder="Search all 29 tools (e.g. compress, excel, crop, bates, form)..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => setUserSearchQuery(e.target.value)}
             aria-label="Search PDF Tools"
           />
           {searchQuery && (
             <button
+              type="button"
               className="tools-search-clear"
-              onClick={() => setSearchQuery('')}
+              onClick={clearSearch}
               aria-label="Clear Search"
             >
               <X size={16} />
@@ -377,6 +557,48 @@ export default function HomePageClient() {
             </button>
           ))}
         </div>
+
+        <Link
+          href="/recipes"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            flexWrap: 'wrap',
+            marginTop: '1rem',
+            padding: '0.85rem 1.15rem',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, rgba(255, 71, 87, 0.12), rgba(99, 102, 241, 0.12))',
+            border: '1px solid rgba(255, 71, 87, 0.28)',
+            textDecoration: 'none',
+            color: 'var(--text-main)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Workflow size={20} style={{ color: 'var(--primary-color)', flexShrink: 0 }} aria-hidden="true" />
+            <div>
+              <strong style={{ fontSize: '0.92rem', display: 'block' }}>
+                New: Multi-Step PDF Recipes
+              </strong>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Chain Merge → Bates Numbering → Watermark → Compress → AES-256 Encrypt in a single local pass.
+              </span>
+            </div>
+          </div>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              color: 'var(--primary-color)',
+            }}
+          >
+            Build Recipe <ArrowRight size={14} aria-hidden="true" />
+          </span>
+        </Link>
       </div>
 
       {/* Tools Grid */}
@@ -410,13 +632,14 @@ export default function HomePageClient() {
             Try searching for another keyword or reset the category filter.
           </p>
           <button
+            type="button"
             className="btn-secondary"
             onClick={() => {
-              setSearchQuery('');
+              clearSearch();
               setSelectedCategory('all');
             }}
           >
-            Show All 21 Tools
+            Show All 29 Tools
           </button>
         </div>
       )}
@@ -437,10 +660,10 @@ export default function HomePageClient() {
           <div style={{ textAlign: 'center', pointerEvents: 'none' }}>
             <Upload size={80} style={{ color: 'var(--primary-color)', animation: 'float 2s ease-in-out infinite' }} />
             <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginTop: '1.5rem', background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Drop PDF File to Begin!
+              Drop PDF, Images, or Docs!
             </h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', marginTop: '0.5rem' }}>
-              We will load the document and ask you which tool to launch.
+              Multiple PDFs auto-open Merge, images open JPG to PDF, or pick a single-PDF tool.
             </p>
           </div>
         </div>
@@ -449,32 +672,42 @@ export default function HomePageClient() {
       {/* Select tool modal */}
       {modalOpen && (
         <div className="modal-overlay" style={{ pointerEvents: 'auto' }}>
-          <div className="modal-content" style={{ maxWidth: '520px', width: '90%' }}>
-            <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Upload size={24} style={{ color: 'var(--primary-color)' }} />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="drop-modal-title"
+            className="modal-content"
+            style={{ maxWidth: '620px', width: '92%' }}
+          >
+            <h2 id="drop-modal-title" className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Upload size={24} style={{ color: 'var(--primary-color)' }} aria-hidden="true" />
               PDF Document Detected
             </h2>
-            <p className="modal-desc" style={{ marginBottom: '1.25rem' }}>
+            <p className="modal-desc" style={{ marginBottom: '1rem' }}>
               Choose a tool to process <strong>{droppedFile?.name}</strong>:
             </p>
             
             <div style={{ 
               display: 'grid', 
-              gridTemplateColumns: 'repeat(2, 1fr)', 
-              gap: '0.75rem', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))', 
+              gap: '0.6rem', 
               width: '100%',
+              maxHeight: '52vh',
+              overflowY: 'auto',
+              paddingRight: '0.25rem',
               marginBottom: '1rem' 
             }}>
-              <button className="btn-secondary" onClick={() => handleSelectTool('/tools/compress')}>Compress PDF</button>
-              <button className="btn-secondary" onClick={() => handleSelectTool('/tools/split')}>Split PDF</button>
-              <button className="btn-secondary" onClick={() => handleSelectTool('/tools/edit')}>Edit PDF</button>
-              <button className="btn-secondary" onClick={() => handleSelectTool('/tools/ocr')}>OCR PDF</button>
-              <button className="btn-secondary" onClick={() => handleSelectTool('/tools/protect')}>Protect PDF</button>
-              <button className="btn-secondary" onClick={() => handleSelectTool('/tools/sign')}>Sign PDF</button>
-              <button className="btn-secondary" onClick={() => handleSelectTool('/tools/organize')}>Organize PDF</button>
-              <button className="btn-secondary" onClick={() => handleSelectTool('/tools/watermark')}>Watermark</button>
-              <button className="btn-secondary" onClick={() => handleSelectTool('/tools/page-numbers')}>Page Numbers</button>
-              <button className="btn-secondary" onClick={() => handleSelectTool('/tools/rotate')}>Rotate PDF</button>
+              {SINGLE_PDF_DROP_TOOLS.map((tool) => (
+                <button
+                  key={tool.href}
+                  type="button"
+                  className="btn-secondary"
+                  style={{ fontSize: '0.84rem', padding: '0.6rem 0.75rem' }}
+                  onClick={() => handleSelectTool(tool.href)}
+                >
+                  {tool.label}
+                </button>
+              ))}
             </div>
             
             <button 

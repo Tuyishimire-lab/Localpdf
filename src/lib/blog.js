@@ -30,8 +30,13 @@ export function getAllPosts() {
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
+const SLUG_REGEX = /^[a-z0-9-]+$/i;
+
 export function getPostBySlug(slug) {
-  const filePath = path.join(POSTS_DIR, `${slug}.mdx`);
+  if (typeof slug !== 'string' || !SLUG_REGEX.test(slug)) return null;
+  const postsRoot = path.resolve(POSTS_DIR);
+  const filePath = path.resolve(postsRoot, `${slug}.mdx`);
+  if (!filePath.startsWith(postsRoot + path.sep)) return null;
   if (!fs.existsSync(filePath)) return null;
   const raw = fs.readFileSync(filePath, 'utf8');
   const { data, content } = matter(raw);

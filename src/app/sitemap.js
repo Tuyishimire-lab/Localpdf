@@ -33,17 +33,26 @@ export default function sitemap() {
     '/tools/repair',
     '/tools/redact',
     '/tools/ai-chat',
+    // Milestone 8 tools
+    '/tools/pdf-to-excel',
+    '/tools/crop',
+    '/tools/extract-images',
+    '/tools/fill-form',
+    '/tools/metadata',
+    '/tools/bates-numbering',
+    '/tools/split-by-size',
+    '/tools/grayscale',
   ];
 
   const staticRoutes = [
     { route: '', priority: 1.0 },
     { route: '/about', priority: 0.6 },
+    { route: '/recipes', priority: 0.85 },
     { route: '/security', priority: 0.6 },
     { route: '/contact', priority: 0.5 },
     { route: '/privacy', priority: 0.4 },
     { route: '/terms', priority: 0.4 },
     { route: '/blog', priority: 0.9 },
-    { route: '/history', priority: 0.3 },
     // Comparison pages
     { route: '/compare', priority: 0.7 },
     { route: '/compare/localpdf-vs-ilovepdf', priority: 0.7 },

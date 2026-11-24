@@ -102,6 +102,50 @@ describe('/api/send — input validation', () => {
     const json = await res.json();
     expect(json.error).toMatch(/too long/i);
   });
+
+  test('returns 400 when non-string types are sent', async () => {
+    const req = makeRequest({ body: { ...validBody, message: { malicious: true } }, ip: '1.1.1.7' });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+  });
+
+  test('returns 400 when CRLF characters appear in email or subject', async () => {
+    const req = makeRequest({
+      body: { ...validBody, subject: "Injected\r\nBcc: evil@example.com" },
+      ip: '1.1.1.8',
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+  });
+
+  test('returns 400 when email exceeds 254 characters', async () => {
+    const longEmail = `${'a'.repeat(245)}@example.com`;
+    const req = makeRequest({ body: { ...validBody, email: longEmail }, ip: '1.1.1.9' });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toMatch(/valid email/i);
+  });
+
+  test('escapes HTML tags in email template payload', async () => {
+    const req = makeRequest({
+      body: {
+        ...validBody,
+        name: '<script>alert(1)</script>',
+        subject: '<b>Urgent</b>',
+        message: '<img src=x onerror=alert(1)>\nLine 2',
+      },
+      ip: '1.1.1.10',
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const payload = JSON.parse(global.fetch.mock.calls[0][1].body);
+    expect(payload.html).not.toContain('<script>');
+    expect(payload.html).not.toContain('<img ');
+    expect(payload.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(payload.html).toContain('&lt;b&gt;Urgent&lt;/b&gt;');
+    expect(payload.html).toContain('&lt;img src=x onerror=alert(1)&gt;<br />Line 2');
+  });
 });
 
 // ── Honeypot tests ──────────────────────────────────────────────────────────

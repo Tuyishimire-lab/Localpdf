@@ -377,30 +377,27 @@ The numbers are embedded directly into each page's content stream using pdf-lib,
 
   protect: {
     title: 'Protect PDF – Password Encrypt Documents',
-    description: `Adding password protection to a PDF is one of the most direct ways to control who can view, print, or modify a sensitive document. LocalPDF's Protect PDF tool implements AES-128 encryption directly in your browser, creating a password-protected PDF that requires the correct password to open.
+    description: `Adding password protection to a PDF is one of the most direct ways to control who can view, print, or modify a sensitive document. LocalPDF's Protect PDF tool implements strong 256-bit AES encryption directly in your browser via WebAssembly, creating a password-protected PDF that requires the correct password to open.
 
-You can set two types of password: a user password (required to open and view the document) and an owner password (required to change permissions such as printing or copying). You can also set specific permissions even for authorized users, for example allowing viewing but prohibiting printing or content copying.
-
-All encryption is performed client-side using pdf-lib's built-in encryption support. No password is ever transmitted to any server, and your document content is never exposed to third parties.`,
+You can set a user open password alongside granular document permissions controlling whether authorized recipients can print, copy text, or edit the file. All encryption executes inside a local Web Worker powered by QPDF WebAssembly, so neither your passwords nor your documents ever leave your device.`,
     howTo: [
-      'Upload the PDF you want to protect.',
-      'Enter a User Password (required to open the document).',
-      'Optionally set an Owner Password to control editing permissions.',
+      'Upload one or multiple PDFs you want to protect.',
+      'Enter and confirm your document password.',
       'Configure permission settings (allow/deny printing, copying, editing).',
-      'Click "Protect PDF" and download the encrypted document.',
+      'Click "Encrypt PDF" and download your AES-256 protected PDF or batch ZIP.',
     ],
     features: [
-      { title: 'AES Encryption', description: 'Industry-standard AES-128 encryption protects your document content from unauthorized access.' },
-      { title: 'User & Owner Passwords', description: 'Set separate passwords for opening the document and for controlling editing permissions independently.' },
+      { title: 'AES-256 Encryption (WASM)', description: 'Strong 256-bit AES encryption executed locally in WebAssembly protects document content from unauthorized access.' },
+      { title: 'User & Owner Passwords', description: 'Applies open protection and enforces owner permission flags independently.' },
       { title: 'Granular Permissions', description: 'Control whether authorized users can print, copy content, or make modifications to the protected document.' },
-      { title: 'Client-Side Security', description: 'Encryption happens entirely in your browser. Your password is never transmitted to any server.' },
+      { title: 'Zero-Upload Batching', description: 'Protect a single PDF or batch multiple PDFs into a ZIP without sending keys or files to any server.' },
     ],
     faqs: [
-      { q: 'How strong is the PDF password protection?', a: 'The tool applies AES-128 encryption, which is the standard for PDF security and is strong enough for most use cases. For highly sensitive documents requiring maximum security, consider AES-256 encryption using dedicated security software.' },
-      { q: 'What happens if I forget the password?', a: 'There is no recovery mechanism. Keep a secure record of your password. If you lose the password, the document content cannot be accessed without specialized password recovery tools.' },
-      { q: 'Can recipients open the protected PDF on any device?', a: 'Yes. Password-protected PDFs are a standard format supported by all PDF readers including Adobe Acrobat, Preview (macOS), Foxit, Chrome, and mobile apps on iOS and Android.' },
-      { q: 'Is the encryption applied client-side?', a: 'Yes. The entire encryption process runs in your browser using pdf-lib. Your password and document are never sent to any server.' },
-      { q: 'Can I protect a PDF that already has a password?', a: 'You need to unlock the existing password first using our Unlock PDF tool, then apply a new password using the Protect tool.' },
+      { q: 'How strong is the PDF password protection?', a: 'The tool applies 256-bit AES encryption powered by QPDF WebAssembly, matching modern enterprise PDF security standards.' },
+      { q: 'What happens if I forget the password?', a: 'There is no recovery mechanism. Keep a secure record of your password. If you lose the password, the document content cannot be accessed.' },
+      { q: 'Can recipients open the protected PDF on any device?', a: 'Yes. AES-256 encrypted PDFs are a standard format supported by Adobe Acrobat, Preview (macOS), Foxit, Chrome, Edge, and mobile PDF readers.' },
+      { q: 'Is the encryption applied client-side?', a: 'Yes. Encryption runs entirely inside an isolated browser Web Worker using QPDF WebAssembly. Your password and document never touch a server.' },
+      { q: 'Can I protect multiple PDFs at once?', a: 'Yes. Drop multiple PDFs to encrypt all of them with your chosen settings and download a single ZIP archive.' },
     ],
   },
 
@@ -410,7 +407,7 @@ All encryption is performed client-side using pdf-lib's built-in encryption supp
 
 Important: this tool is intended for documents where you have legitimate access, meaning documents you encrypted yourself, or documents where you have been provided the password and wish to remove the restriction for your own convenience. You must provide the correct password to unlock the file.
 
-The unlocking process uses pdf-lib to decrypt the document client-side and export a new, unencrypted version. Your document and password are never sent to any server.`,
+Decryption runs 100% client-side using QPDF WebAssembly inside a browser Web Worker. Your document and password are never sent to any server.`,
     howTo: [
       'Upload the password-protected PDF.',
       'Enter the password for the document when prompted.',
@@ -623,11 +620,169 @@ This is a Beta feature. Table detection accuracy depends heavily on the source P
       { title: 'Beta Transparency', description: 'The Beta label means we are honest about accuracy limitations. Check your output and use the data as a starting point for further editing.' },
     ],
     faqs: [
-      { q: 'Why is the Excel output misaligned or has rows in the wrong order?', a: 'PDF does not have a native concept of tables. The tool infers structure from text positions, which works well for simple layouts but may misdetect complex or multi-column arrangements.' },
-      { q: 'Can I extract data from a scanned PDF?', a: 'Scanned PDFs contain images with no text data. Use LocalPDF OCR first to add a text layer, then convert to Excel.' },
-      { q: 'Why is the Beta badge shown?', a: 'Table detection from arbitrary PDFs is an inherently approximate process. We show the Beta label to set honest expectations about accuracy rather than implying perfect conversion.' },
+      { q: 'Why is the Excel output misaligned or has rows in the wrong order?', a: 'PDF does not have a native concept of tables. The tool infers structure from text positions, which works well for simple layouts and provides column-gap and row-tolerance sliders to tune detection.' },
+      { q: 'Can I extract data from a scanned PDF?', a: 'Scanned PDFs contain images with no text data. Use LocalPDF OCR first to add a text layer, then export to Excel or CSV.' },
+      { q: 'Can I export CSV as well as Excel (.xlsx)?', a: 'Yes. Switch between multi-sheet or combined .xlsx workbooks and RFC 4180 .csv files directly in the sidebar.' },
       { q: 'Is there a page limit?', a: 'There is no imposed page limit. Very long documents may take more time to process but will complete on most modern devices.' },
       { q: 'My PDF has financial data, is it safe to use this tool?', a: 'Yes. All processing happens in your browser with no server uploads. Financial data in your PDF is never transmitted anywhere.' },
+    ],
+  },
+
+  crop: {
+    title: 'Crop PDF Pages – Visual Margin & CropBox Trimmer',
+    description: `Trim excessive white margins, headers, or printer bleed areas cleanly from PDF pages right in your browser. Crop PDF adjusts each page's PDF CropBox losslessly, preserving sharp vector fonts and selectable text.
+
+Automatic rotation awareness ensures top, right, bottom, and left margin trims match the upright orientation you preview on screen, and optional page ranges let you crop all pages or specific chapters independently.`,
+    howTo: [
+      'Select or drop your PDF document.',
+      'Adjust Top, Right, Bottom, and Left margin sliders (or pick a quick inch preset) while inspecting the red crop boundary on screen.',
+      'Optionally restrict cropping to a specific page range (e.g. 2-10).',
+      'Click "Apply CropBox" and download your trimmed PDF.',
+    ],
+    features: [
+      { title: 'Lossless Vector Crop', description: 'Updates native PDF CropBox boundaries without rasterizing or degrading crisp document fonts.' },
+      { title: 'Live Margin Overlay', description: 'Visual red guide box previews exact trim margins before you export.' },
+      { title: 'Rotation-Aware', description: 'Automatically translates visual margins for portrait, landscape, and rotated pages.' },
+      { title: '100% Client-Side', description: 'All geometry adjustments run locally in your browser with zero file uploads.' },
+    ],
+    faqs: [
+      { q: 'Does Crop PDF degrade text quality?', a: 'No. Cropping updates the PDF page CropBox vector boundary rather than re-encoding images or text.' },
+      { q: 'Can I crop only specific pages?', a: 'Yes. Enter a page range like "1, 3-5" in the options sidebar or leave blank to apply to every page.' },
+      { q: 'Wait—does cropping permanently erase content outside the box?', a: 'Setting a CropBox hides outer margins from viewers and printers. For irreversible removal of sensitive content, use Redact & Sanitize.' },
+    ],
+  },
+
+  'extract-images': {
+    title: 'Extract Images from PDF – Save Embedded Photos',
+    description: `Pull every embedded photograph, diagram, and logo out of a PDF at its native embedded dimensions without taking screenshots or cropping pages manually.
+
+Extract Images scans PDF object streams directly in your browser, renders each extracted raster object onto an offscreen canvas to export lossless PNGs, and lets you download individual images or bundle everything into one ZIP archive.`,
+    howTo: [
+      'Open or drop a PDF containing embedded images.',
+      'Wait while LocalPDF scans page object streams automatically.',
+      'Download individual extracted PNG files or click "Download All as ZIP".',
+    ],
+    features: [
+      { title: 'Lossless PNG Export', description: 'Saves extracted embedded images cleanly as PNGs with full original pixel dimensions.' },
+      { title: 'One-Click Batch ZIP', description: 'Bundle dozens of photos from multi-page brochures or reports into one ZIP file.' },
+      { title: 'Instant Gallery Preview', description: 'Displays pixel dimensions, source page badge, and file size before downloading.' },
+      { title: 'Private In-Browser Scan', description: 'Document assets never leave your device.' },
+    ],
+    faqs: [
+      { q: 'What is the difference between Extract Images and PDF to JPG?', a: 'PDF to JPG renders entire pages into images. Extract Images pulls only the separate photos/graphics embedded inside the PDF.' },
+      { q: 'Why did it find 0 images on a diagram PDF?', a: 'Vector line drawings (CAD, charts drawn from paths) are vector graphics rather than embedded raster images. Use PDF to JPG/PNG to export whole vector pages.' },
+    ],
+  },
+
+  'fill-form': {
+    title: 'Fill PDF Forms Online – Interactive AcroForm Editor',
+    description: `Complete fillable tax forms, government applications, contracts, and onboarding questionnaires without printing or installing desktop software.
+
+Fill PDF Forms inspects native AcroForm fields (text inputs, checkboxes, dropdown menus, and radio groups), generates clean interactive inputs alongside a page preview, and lets you export an editable filled PDF or flatten values permanently so recipients cannot alter them.`,
+    howTo: [
+      'Upload a fillable AcroForm PDF.',
+      'Review detected form fields in the right-hand panel and enter text, check boxes, or pick dropdown options.',
+      'Optionally enable "Flatten form fields" to lock values permanently.',
+      'Click "Save Filled Form" and download or chain to Sign / Protect.',
+    ],
+    features: [
+      { title: 'Auto-Detected Controls', description: 'Automatically renders native controls for PDF text fields, checkboxes, radio buttons, and dropdowns.' },
+      { title: 'Optional Form Flattening', description: 'Lock filled entries into static PDF content directly before sharing.' },
+      { title: 'Workflow Chaining', description: 'Send filled forms directly into Sign PDF or Protect PDF (AES-256) without re-uploading.' },
+      { title: 'Confidentiality Built-In', description: 'Sensitive form answers (SSNs, bank details, HR records) stay strictly on your machine.' },
+    ],
+    faqs: [
+      { q: 'What if my PDF shows "No AcroForm Fields Found"?', a: 'Many scanned or print-to-PDF forms look like forms visually without electronic AcroForm definitions. Use our Edit PDF or Sign PDF tool to type anywhere on the page.' },
+      { q: 'Should I flatten the form before emailing?', a: 'Check "Flatten form fields" when submitting final applications so values always appear consistently across every PDF viewer and cannot be casually edited.' },
+    ],
+  },
+
+  metadata: {
+    title: 'PDF Metadata Editor & Privacy Scrubber',
+    description: `Inspect, update, or completely wipe hidden document metadata embedded inside PDF files—including Title, Author, Subject, Keywords, Creator software, and Producer stamps.
+
+Before publishing reports or sharing legal files externally, leftover Author usernames, internal software versions, or creation dates can leak unintended context. Use our one-click Privacy Scrub to clear all document info fields cleanly in one click.`,
+    howTo: [
+      'Load your PDF to inspect current Title, Author, Subject, Keywords, Creator, Producer, and timestamps.',
+      'Edit any metadata field and click "Save Metadata Changes".',
+      'Or click "Scrub All Privacy Metadata" to wipe all identifying fields and reset timestamps.',
+    ],
+    features: [
+      { title: 'Full Field Editing', description: 'Update Title, Author, Subject, comma-separated Keywords, Creator, and Producer tags.' },
+      { title: 'One-Click Privacy Scrub', description: 'Clear identifying author names, software signatures, and creation timestamps immediately.' },
+      { title: 'Instant Property Inspection', description: 'Shows page count, file size, and existing dates right upon load.' },
+      { title: 'Zero Server Exposure', description: 'Metadata editing runs 100% locally via client-side WebAssembly and JavaScript.' },
+    ],
+    faqs: [
+      { q: 'Why scrub PDF metadata before sharing?', a: 'Office suites often embed the computer user name, internal file paths, or revision dates automatically in PDF properties.' },
+      { q: 'Does scrubbing metadata affect visible page content?', a: 'No. Page layout, fonts, and graphics remain completely untouched.' },
+    ],
+  },
+
+  'bates-numbering': {
+    title: 'Bates Numbering & Legal Header/Footer Stamping',
+    description: `Stamp standardized, continuous Bates identification numbers (for example EX-000001, CONF-000105) plus custom headers and footers across single PDFs or multi-file legal production sets.
+
+Continuous sequence tracking automatically increments Bates numbers across every uploaded PDF in order and packages batch outputs into a convenient ZIP archive—running completely offline so confidential discovery files never leave law firm hardware.`,
+    howTo: [
+      'Upload one or multiple PDF files in your desired production order.',
+      'Configure your Prefix, Starting Number, Zero-Pad Digits, Suffix, and Corner Position.',
+      'Optionally add Top Header or Bottom-Left Footer templates using {page} and {total}.',
+      'Click "Apply Bates Numbering" to download a stamped PDF or continuous batch ZIP.',
+    ],
+    features: [
+      { title: 'Continuous Multi-File Sequence', description: 'Queue multiple PDFs and increment Bates IDs seamlessly from document to document.' },
+      { title: 'Custom Format & Position', description: 'Configure prefix, suffix, digit padding, font size, color, and all six header/footer positions.' },
+      { title: 'Dynamic {page} & {total}', description: 'Combine Bates IDs with dynamic header/footer templates on any page edge.' },
+      { title: 'Client-Side Legal Compliance', description: 'Zero cloud transmission keeps privileged discovery sets strictly confidential.' },
+    ],
+    faqs: [
+      { q: 'Will Bates numbers land in the right corner on landscape or rotated pages?', a: 'Yes. Coordinates automatically normalize across page rotations and CropBox offsets.' },
+      { q: 'Can I continue numbering from a prior batch?', a: 'Yes. Set "Start #" to the next sequential integer (e.g., 1043) to continue seamlessly across productions.' },
+    ],
+  },
+
+  'split-by-size': {
+    title: 'Split PDF by File Size or Bookmarks',
+    description: `Break oversized PDFs into email-friendly size limits (such as <= 5 MB, <= 10 MB, or <= 25 MB parts) or split structured books and manuals automatically along outline bookmark chapters.
+
+All splitting runs directly in browser memory using lossless page copying, packaging generated parts neatly into a single ZIP download with page-range and byte-size summaries.`,
+    howTo: [
+      'Select a large PDF document.',
+      'Choose "Max File Size" (5 MB, 10 MB, 25 MB, or custom MB) or switch to "Bookmarks" if your PDF has outline chapters.',
+      'Click "Split into ZIP" and download your archive of PDF parts.',
+    ],
+    features: [
+      { title: 'Email-Ready Size Presets', description: 'Quickly chunk large packets for 5 MB, 10 MB, or 25 MB upload/email gates.' },
+      { title: 'Bookmark Chapter Splitting', description: 'Automatically extracts PDF outline chapters into individually named PDFs.' },
+      { title: 'Lossless Page Splitting', description: 'Preserves original fonts, vectors, and links without re-compression.' },
+      { title: 'No Upload Timeouts', description: 'Split 100+ MB files without waiting on cloud uploads.' },
+    ],
+    faqs: [
+      { q: 'What happens if a single page is larger than my chosen size limit?', a: 'That single page is placed in its own 1-page part so no pages are ever dropped or clipped.' },
+      { q: 'Why does Bookmarks show 0 detected?', a: 'Some PDFs only contain visual Table of Contents text without electronic PDF outline bookmarks. Use Max File Size mode for those files.' },
+    ],
+  },
+
+  grayscale: {
+    title: 'Grayscale & Print-Ready Black-and-White PDF',
+    description: `Convert color PDFs into calibrated monochrome grayscale documents to cut color toner/ink costs, standardize scanned handouts, or prepare black-and-white print proofs.
+
+Uses perceptual ITU-R BT.709 luminance weighting with adjustable DPI and contrast boost across single PDFs or multi-file batch queues.`,
+    howTo: [
+      'Upload one or multiple color PDF documents.',
+      'Select your target print DPI resolution and optional contrast boost.',
+      'Click "Convert to Grayscale" and download your monochrome PDF or batch ZIP.',
+    ],
+    features: [
+      { title: 'Calibrated BT.709 Luminance', description: 'Preserves natural tonal contrast rather than washing out highlights or text.' },
+      { title: 'Adjustable DPI & Contrast', description: 'Tune between 110 DPI compact handouts and crisp 180 DPI print proofs.' },
+      { title: 'Multi-PDF Batch ZIP', description: 'Convert a folder of color PDFs into grayscale in a single ZIP download.' },
+      { title: 'Private Browser Rendering', description: 'HTML5 Canvas luminance filtering runs strictly on your own device.' },
+    ],
+    faqs: [
+      { q: 'Will Grayscale PDF reduce file size as well?', a: 'Often yes—converting color scans to grayscale JPEG streams at 110–144 DPI typically trims size while cutting color printing costs.' },
+      { q: 'Can I batch convert multiple files?', a: 'Yes. Add multiple PDFs to download all converted grayscale files together in one ZIP.' },
     ],
   },
 };

@@ -7,6 +7,7 @@ import ProgressModal from '../ProgressModal';
 import PagePreview from '../PagePreview';
 import { loadPdf, renderPageToBlob } from '../../../lib/pdfEngine';
 import { downloadFile } from '../../../lib/utils';
+import { toast } from '../../../context/ToastContext';
 import JSZip from 'jszip';
 
 export default function PdfToJpgTool() {
@@ -31,7 +32,7 @@ export default function PdfToJpgTool() {
       setTotalPages(doc.numPages);
     } catch (err) {
       console.error("Error loading PDF", err);
-      alert("Failed to load PDF file.");
+      toast.error("Failed to load PDF file.");
       setFiles([]);
     }
   };
@@ -51,10 +52,12 @@ export default function PdfToJpgTool() {
     try {
       const zip = new JSZip();
       const ext = imageFormat === 'jpg' ? 'jpg' : 'png';
-      
+      const mimeType = imageFormat === 'png' ? 'image/png' : 'image/jpeg';
+      const baseName = files[0].name.replace(/\.pdf$/i, '');
+
       for (let i = 1; i <= totalPages; i++) {
-        const imageBlob = await renderPageToBlob(pdfDoc, i, 2.0);
-        zip.file(`${files[0].name.replace('.pdf', '')}_page_${i}.${ext}`, imageBlob);
+        const imageBlob = await renderPageToBlob(pdfDoc, i, 2.0, mimeType, 0.92);
+        zip.file(`${baseName}_page_${i}.${ext}`, imageBlob);
       }
 
       const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -62,7 +65,7 @@ export default function PdfToJpgTool() {
       setProcessing(false);
     } catch (err) {
       console.error("Image conversion error:", err);
-      alert("Failed to convert PDF pages to images.");
+      toast.error("Failed to convert PDF pages to images.");
       setModalOpen(false);
       setProcessing(false);
     }
@@ -70,7 +73,7 @@ export default function PdfToJpgTool() {
 
   const handleDownload = () => {
     if (!processedBlob) return;
-    const name = files[0].name.replace('.pdf', '');
+    const name = files[0].name.replace(/\.pdf$/i, '');
     downloadFile(processedBlob, `${name}_images.zip`);
   };
 
@@ -98,7 +101,7 @@ export default function PdfToJpgTool() {
         onFilesSelected={handleFilesSelected}
         onClear={handleClear}
         onProcess={handleProcess}
-        processLabel="Convert to JPG"
+        processLabel={imageFormat === 'png' ? 'Convert to PNG' : 'Convert to JPG'}
         processing={processing}
         multiple={false}
         leftPane={leftPane}
@@ -136,6 +139,10 @@ export default function PdfToJpgTool() {
         onDownload={handleDownload}
         onClose={() => setModalOpen(false)}
         downloadLabel="Download Images (ZIP)"
+        resultBlob={processedBlob}
+        resultFileName={files[0] ? `${files[0].name.replace(/\.pdf$/i, '')}_images.zip` : 'pdf_images.zip'}
+        currentToolId="pdf-to-jpg"
+        inputSize={files[0]?.size}
       />
     </>
   );

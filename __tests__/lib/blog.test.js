@@ -3,6 +3,7 @@
  *
  * blog.js reads MDX files from the filesystem, so it must run in Node.
  */
+import fs from 'fs';
 import { getAllPosts, getPostBySlug } from '../../src/lib/blog.js';
 
 describe('getAllPosts', () => {
@@ -24,6 +25,8 @@ describe('getAllPosts', () => {
       expect(post).toHaveProperty('title');
       expect(post).toHaveProperty('description');
       expect(post).toHaveProperty('date');
+      expect(post).toHaveProperty('readTime');
+      expect(post).toHaveProperty('category');
       expect(post).toHaveProperty('content');
       expect(typeof post.slug).toBe('string');
       expect(typeof post.title).toBe('string');
@@ -48,6 +51,12 @@ describe('getAllPosts', () => {
       expect(post.slug).not.toContain('.mdx');
       expect(post.slug).not.toContain('/');
     }
+  });
+
+  test('returns empty array when posts directory does not exist', () => {
+    const existsSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+    expect(getAllPosts()).toEqual([]);
+    existsSpy.mockRestore();
   });
 });
 
@@ -77,5 +86,26 @@ describe('getPostBySlug', () => {
     const post = getPostBySlug('how-to-merge-pdf-files');
     // gray-matter strips frontmatter from content
     expect(post.content).not.toMatch(/^---/);
+  });
+
+  test('rejects path-traversal and invalid slugs', () => {
+    expect(getPostBySlug('../package')).toBeNull();
+    expect(getPostBySlug('../../next.config')).toBeNull();
+    expect(getPostBySlug('a/b')).toBeNull();
+    expect(getPostBySlug('foo..bar')).toBeNull();
+    expect(getPostBySlug('')).toBeNull();
+    expect(getPostBySlug(null)).toBeNull();
+  });
+
+  test('falls back to slug as title and Guide category when missing in frontmatter', () => {
+    const readSpy = jest.spyOn(fs, 'readFileSync').mockReturnValue('---\ndescription: Test\n---\nBody');
+    const existsSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+    const post = getPostBySlug('my-fallback-slug');
+    expect(post.title).toBe('my-fallback-slug');
+    expect(post.category).toBe('Guide');
+
+    readSpy.mockRestore();
+    existsSpy.mockRestore();
   });
 });

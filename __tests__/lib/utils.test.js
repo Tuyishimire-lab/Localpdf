@@ -25,9 +25,10 @@ describe('formatBytes', () => {
     expect(formatBytes(1073741824)).toBe('1 GB');
   });
 
-  test('respects custom decimal places', () => {
+  test('respects custom decimal places and handles negative decimals', () => {
     expect(formatBytes(1536, 0)).toBe('2 KB');
     expect(formatBytes(1536, 3)).toBe('1.5 KB');
+    expect(formatBytes(1536, -1)).toBe('2 KB');
   });
 });
 
@@ -36,9 +37,10 @@ describe('parsePageRanges', () => {
     expect(parsePageRanges('', 5)).toEqual([1, 2, 3, 4, 5]);
   });
 
-  test('returns all pages for null/undefined input', () => {
+  test('returns all pages for null/undefined/whitespace input', () => {
     expect(parsePageRanges(null, 3)).toEqual([1, 2, 3]);
     expect(parsePageRanges(undefined, 3)).toEqual([1, 2, 3]);
+    expect(parsePageRanges('   ', 4)).toEqual([1, 2, 3, 4]);
   });
 
   test('parses a single page number', () => {

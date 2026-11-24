@@ -10,6 +10,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated test coverage and copied third-party WASM/worker assets:
+    "coverage/**",
+    "public/pdf/**",
+    "public/tesseract/**",
+    "public/wasm/**",
   ]),
 ]);
 

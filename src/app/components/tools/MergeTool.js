@@ -5,24 +5,40 @@ import { Layers, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import Workspace from '../Workspace';
 import ProgressModal from '../ProgressModal';
 import { loadPdf, renderPageToDataUrl } from '../../../lib/pdfEngine';
+import { loadPdfLibSafely } from '../../../lib/pdfGuard';
 import { downloadFile, formatBytes } from '../../../lib/utils';
+import { toast } from '../../../context/ToastContext';
 import { PDFDocument } from 'pdf-lib';
 
+function createItemId() {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+}
+
 export default function MergeTool() {
-  const [files, setFiles] = useState([]);
-  const [fileDetails, setFileDetails] = useState({});
+  const [items, setItems] = useState([]);
   const [processing, setProcessing] = useState(false);
   const [processedBlob, setProcessedBlob] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleFilesSelected = async (newFiles) => {
-    setFiles((prev) => [...prev, ...newFiles]);
+    const newItems = newFiles.map((file) => ({
+      id: createItemId(),
+      file,
+      pageCount: '...',
+      previewUrl: null,
+      sizeStr: formatBytes(file.size)
+    }));
 
-    newFiles.forEach(async (file) => {
+    setItems((prev) => [...prev, ...newItems]);
+
+    newItems.forEach(async (item) => {
+      let pdfDoc = null;
       try {
-        const pdfDoc = await loadPdf(file);
+        pdfDoc = await loadPdf(item.file);
         const pageCount = pdfDoc.numPages;
-        
+
         let previewUrl = null;
         try {
           previewUrl = await renderPageToDataUrl(pdfDoc, 1, 0.3);
@@ -30,54 +46,51 @@ export default function MergeTool() {
           console.error("Error rendering first page preview", e);
         }
 
-        setFileDetails((prev) => ({
-          ...prev,
-          [file.name + file.size]: {
-            pageCount,
-            previewUrl,
-            sizeStr: formatBytes(file.size)
-          }
-        }));
+        setItems((prev) =>
+          prev.map((entry) =>
+            entry.id === item.id ? { ...entry, pageCount, previewUrl } : entry
+          )
+        );
       } catch (err) {
         console.error("Error parsing PDF", err);
+      } finally {
+        await pdfDoc?.destroy?.();
       }
     });
   };
 
   const handleClear = () => {
-    setFiles([]);
-    setFileDetails({});
+    setItems([]);
     setProcessedBlob(null);
   };
 
   const moveFile = (index, direction) => {
-    const newFiles = [...files];
     const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= files.length) return;
-    
-    const temp = newFiles[index];
-    newFiles[index] = newFiles[targetIndex];
-    newFiles[targetIndex] = temp;
-    setFiles(newFiles);
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+    setItems((prev) => {
+      const next = [...prev];
+      const temp = next[index];
+      next[index] = next[targetIndex];
+      next[targetIndex] = temp;
+      return next;
+    });
   };
 
   const removeFile = (index) => {
-    const newFiles = [...files];
-    newFiles.splice(index, 1);
-    setFiles(newFiles);
+    setItems((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   const handleProcess = async () => {
-    if (files.length === 0) return;
+    if (items.length === 0) return;
     setProcessing(true);
     setModalOpen(true);
 
     try {
       const mergedPdf = await PDFDocument.create();
       
-      for (const file of files) {
-        const fileBytes = await file.arrayBuffer();
-        const pdf = await PDFDocument.load(fileBytes, { ignoreEncryption: true });
+      for (const item of items) {
+        const fileBytes = await item.file.arrayBuffer();
+        const pdf = await loadPdfLibSafely(fileBytes);
         const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
         copiedPages.forEach((page) => mergedPdf.addPage(page));
       }
@@ -88,7 +101,7 @@ export default function MergeTool() {
       setProcessing(false);
     } catch (err) {
       console.error("Merging error:", err);
-      alert("Failed to merge PDF files. Ensure none are password-protected.");
+      toast.error(err?.message || "Failed to merge PDF files. Ensure none are password-protected.");
       setModalOpen(false);
       setProcessing(false);
     }
@@ -99,18 +112,23 @@ export default function MergeTool() {
     downloadFile(processedBlob, "merged_document.pdf");
   };
 
+  const files = items.map((item) => item.file);
+
   const leftPane = (
     <div style={{ width: '100%' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem' }}>
-        {files.map((file, index) => {
-          const detail = fileDetails[file.name + file.size] || { pageCount: '...', sizeStr: '...', previewUrl: null };
+        {items.map((item, index) => {
+          const { id, file, pageCount, previewUrl, sizeStr } = item;
           return (
-            <div key={file.name + index} className="preview-card" style={{ padding: '1rem', width: 'auto' }}>
+            <div key={id} className="preview-card" style={{ padding: '1rem', width: 'auto' }}>
               <div className="preview-badge">{index + 1}</div>
               
               <div className="preview-image-container" style={{ aspectRatio: '1 / 1.414', height: '140px' }}>
-                {detail.previewUrl ? (
-                  <img src={detail.previewUrl} alt={file.name} className="preview-image" />
+                {previewUrl ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={previewUrl} alt={file.name} className="preview-image" />
+                  </>
                 ) : (
                   <div className="modal-spinner" style={{ width: '20px', height: '20px', borderWidth: '2px' }}></div>
                 )}
@@ -123,9 +141,9 @@ export default function MergeTool() {
               >
                 {file.name}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', justifycontent: 'space-between', width: '100%', marginTop: '4px' }}>
-                <span>{detail.pageCount} pages</span>
-                <span>{detail.sizeStr}</span>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', width: '100%', marginTop: '4px' }}>
+                <span>{pageCount} pages</span>
+                <span>{sizeStr}</span>
               </div>
               
               <div style={{ display: 'flex', gap: '0.5rem', width: '100%', marginTop: '0.75rem' }}>
@@ -139,7 +157,7 @@ export default function MergeTool() {
                 </button>
                 <button 
                   className="rotate-card-btn" 
-                  disabled={index === files.length - 1} 
+                  disabled={index === items.length - 1} 
                   onClick={() => moveFile(index, 1)}
                   title="Move Down"
                 >

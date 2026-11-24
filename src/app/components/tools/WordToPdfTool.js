@@ -5,7 +5,9 @@ import { FileText, Trash2 } from 'lucide-react';
 import Workspace from '../Workspace';
 import ProgressModal from '../ProgressModal';
 import { downloadFile, formatBytes } from '../../../lib/utils';
+import { toast } from '../../../context/ToastContext';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import JSZip from 'jszip';
 
 export default function WordToPdfTool() {
@@ -756,6 +758,7 @@ export default function WordToPdfTool() {
 
     try {
       const pdfDoc = await PDFDocument.create();
+      pdfDoc.registerFontkit(fontkit);
       const fontsMap = await embedStandardFontsMap(pdfDoc);
 
       // Determine page dimensions
@@ -829,21 +832,26 @@ export default function WordToPdfTool() {
               const textAreaWidth = Math.max(1, cellW - cellPadding * 2);
               let cellTextHeight = cellPadding * 2;
               for (const cp of cell.paragraphs) {
-                const cpFont = fontsMap['Poppins'] || defaultFont;
-                const cpSize = (cp.runs[0]?.fontSize) || defaultFontSize;
-                const rawText = cp.runs.filter(r => r.type === 'text').map(r => r.text).join('');
-                const text = sanitizeText(rawText);
-                if (!text.trim()) { cellTextHeight += cpSize * 0.8; continue; }
-                const words = text.match(/\s+|\S+/g) || [];
-                let lineW = 0;
-                let lines = 1;
-                for (const word of words) {
-                  let ww = 0;
-                  try { ww = cpFont.widthOfTextAtSize(word, cpSize); } catch (_) { ww = cpSize * 0.5 * word.length; }
-                  if (lineW + ww > textAreaWidth && lineW > 0) { lines++; lineW = ww; }
-                  else { lineW += ww; }
+                const cpRuns = cp.runs.filter(r => r.type === 'text' && r.text);
+                if (!cpRuns.length) { cellTextHeight += defaultFontSize * 0.8; continue; }
+                for (const run of cpRuns) {
+                  const runFont = (fontsMap['Poppins'] && run.fontFamily === 'helvetica')
+                    ? (run.bold && run.italic ? fontsMap['Poppins-BoldItalic'] : run.bold ? fontsMap['Poppins-Bold'] : run.italic ? fontsMap['Poppins-Italic'] : fontsMap['Poppins'])
+                    : (run.bold && fontsMap['Helvetica-Bold'] ? fontsMap['Helvetica-Bold'] : defaultFont);
+                  const runSize = Math.min(run.fontSize || defaultFontSize, 14);
+                  const text = sanitizeText(run.text || '');
+                  const words = text.match(/\s+|\S+/g) || [];
+                  let lineW = 0;
+                  let lines = 1;
+                  for (const word of words) {
+                    let ww = 0;
+                    try { ww = runFont.widthOfTextAtSize(word, runSize); } catch (_) { ww = runSize * 0.5 * word.length; }
+                    if (lineW + ww > textAreaWidth && lineW > 0) { lines++; lineW = ww; }
+                    else { lineW += ww; }
+                  }
+                  cellTextHeight += lines * runSize * 1.38;
                 }
-                cellTextHeight += lines * cpSize * 1.38 + 3;
+                cellTextHeight += 3;
               }
               rowHeight = Math.max(rowHeight, cellTextHeight);
               colIdx += cell.colSpan;
@@ -1019,7 +1027,7 @@ export default function WordToPdfTool() {
               const isJustified = paragraph.align === 'justify' && !isLastLine;
               const spaceSpans = line.filter(span => /^\s+$/.test(span.text));
               const extraSpaceWidth = (isJustified && spaceSpans.length > 0)
-                ? (printableWidth - lineTotalWidth) / spaceSpans.length
+                ? Math.max(0, (activePrintableWidth - lineTotalWidth) / spaceSpans.length)
                 : 0;
 
               // Draw line spans horizontally
@@ -1220,7 +1228,7 @@ export default function WordToPdfTool() {
     } catch (err) {
       console.error("Structured conversion error:", err);
       const msg = err?.message || String(err);
-      alert(`Conversion failed: ${msg}\n\nPlease report this error.`);
+      toast.error(`Conversion failed: ${msg}`);
       setModalOpen(false);
       setProcessing(false);
     }

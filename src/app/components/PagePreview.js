@@ -58,8 +58,9 @@ export default function PagePreview({
           }}
           type="button"
           title="Remove"
+          aria-label={`Remove page ${pageNum}`}
         >
-          <Trash2 size={12} />
+          <Trash2 size={12} aria-hidden="true" />
         </button>
       )}
 
@@ -67,6 +68,7 @@ export default function PagePreview({
         {loading ? (
           <div className="modal-spinner" style={{ width: '24px', height: '24px', borderWidth: '2px' }}></div>
         ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
           <img 
             src={imgSrc} 
             alt={`Page ${pageNum}`} 
@@ -91,8 +93,9 @@ export default function PagePreview({
               onRotate();
             }}
             title="Rotate Page"
+            aria-label={`Rotate page ${pageNum} clockwise`}
           >
-            <RotateCw size={12} />
+            <RotateCw size={12} aria-hidden="true" />
           </button>
         </div>
       )}

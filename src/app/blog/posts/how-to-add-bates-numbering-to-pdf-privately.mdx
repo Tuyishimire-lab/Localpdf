@@ -1,0 +1,51 @@
+---
+title: "How to Add Legal Bates Numbering to PDFs Privately"
+description: "A practical guide to legal Bates stamping: choosing prefixes and zero-padding, maintaining continuous numbering across multiple exhibits, ordering redaction and encryption safely, and running everything offline."
+date: "2026-08-27"
+readTime: "6 min"
+category: "Legal"
+---
+
+In litigation discovery, arbitration, M&A due diligence, and regulatory audits, every single page produced must carry a unique, unambiguous identifier. When opposing counsel or a regulator asks a witness to turn to page 142 of an unnumbered production, confusion follows. **Bates numbering** solves this by stamping a sequential alphanumeric ID (such as `DEF-000001`, `DEF-000002`, and so on) onto every page across an entire set of documents.
+
+Because discovery exhibits routinely contain privileged communications, trade secrets, employee PII, or medical histories, uploading them to a cloud PDF service creates serious confidentiality and bar ethics risks. With [LocalPDF Bates Numbering](/tools/bates-numbering), sequential stamping executes entirely inside your browser's local memory with zero server uploads.
+
+## Standard Bates Numbering Conventions
+
+Consistent naming saves hours during depositions and brief drafting. Most legal teams follow a structure made up of a **Party or Case Prefix**, optional **Confidentiality Tier**, and **6-to-8 Digit Zero-Padded Numbers**.
+
+| Prefix Pattern | Typical Use Case | Example Output |
+|---|---|---|
+| `PLF-` or `DEF-` | Identifying Plaintiff vs. Defendant productions | `DEF-000001` |
+| `CONF-` | Confidential material under protective order | `CONF-000125` |
+| `EXH-` | Hearing, deposition, or trial exhibit binders | `EXH-000042` |
+| `CASE24-` | Multi-party matters separating matter IDs | `CASE24-001050` |
+
+**Why zero-padding matters:** Using 6 digits (`000001`) instead of `1` ensures alphabetical file sorting, spreadsheets, and document indexes keep pages in true numerical order (`000009` before `000010`). Choose 7 or 8 digits if a rolling production may exceed one million pages.
+
+## Step-by-Step: Continuous Bates Stamping Across Multiple PDFs
+
+When producing ten separate exhibit PDFs in one batch, numbering cannot reset back to `1` on the second file. Continuous cross-file counting is essential.
+
+1. Open [Bates Numbering](/tools/bates-numbering) and drop one or multiple PDF files onto the workspace.
+2. Arrange your files in production order.
+3. Configure your numbering format:
+   - **Prefix:** Enter a label such as `CONF-` or `PROD-`.
+   - **Start Number:** Begin at `1` for a new production, or enter the next unused number (such as `482`) when producing a supplemental rolling batch.
+   - **Digits:** Choose `6` (default) for standard productions or more for large archives.
+   - **Position & Styling:** Pick a corner (`bottom-right`, `bottom-left`, `top-right`, `top-left`) and adjust font size/color so stamps do not collide with existing page footers.
+4. Optionally add **Headers & Footers** using dynamic placeholders such as `{page}` and `{total}` alongside case captions or confidentiality notices like *"CONFIDENTIAL - SUBJECT TO PROTECTIVE ORDER"*.
+5. Click **Apply Bates Numbering**. In batch mode, LocalPDF tracks `nextStartNumber` automatically across every PDF and exports either a standalone stamped PDF or a `.zip` bundle with an index range summary.
+
+## Critical Order of Operations for Legal Productions
+
+Applying Bates stamps in the wrong sequence can compromise confidentiality or overwrite markings. Follow this order:
+
+1. **Merge or Organize First (if building one binder):** Use [Merge PDF](/tools/merge) or [Organize PDF](/tools/organize) before stamping so blank separator slips and cover sheets receive sequential IDs too.
+2. **Redact & Flatten Before Stamping:** Always run [Redact & Sanitize](/tools/redact) and [Flatten PDF](/tools/flatten) before adding Bates numbers. Redaction rasterizes sensitive pages to remove underlying selectable text; flattening bakes fillable form fields and comments into static content. If you run redaction *after* Bates stamping, a blackout box near a corner could obscure your Bates ID.
+3. **Scrub Metadata:** Clear drafting usernames, internal file titles, and software history using the [Metadata Editor & Scrubber](/tools/metadata).
+4. **Encrypt Strictly Last:** Lock final deliverables with 256-bit AES passwords in [Protect PDF](/tools/protect) only after all stamps and inspections are complete.
+
+## Automating the Whole Discovery Sequence Offline
+
+If your firm runs the same discovery sequence every week, [PDF Recipes](/recipes) includes a built-in **Legal Discovery Pack** preset that chains `Merge PDFs -> Bates Numbering -> Scrub Metadata -> Lossless Compress (QPDF)` in a single local pass. You can also append an **Encrypt PDF (AES-256)** step, enable **Strict Air-Gapped Mode** inside the privacy verification badge to block external analytics, and verify zero uploads in [Security & Transparency](/security).

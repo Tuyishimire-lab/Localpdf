@@ -2,12 +2,13 @@ export const dynamic = 'force-static';
 
 import Link from 'next/link';
 import { ShieldCheck, Lock, Code2, Eye, ExternalLink, FileCode, CheckCircle2, AlertTriangle, Terminal } from 'lucide-react';
+import { buildPageMetadata } from '../../lib/seo';
 
-export const metadata = {
+export const metadata = buildPageMetadata({
   title: 'Security & Transparency | LocalPDF',
   description: 'Learn how LocalPDF provides verifiable, client-side document security. Read our open source architecture, verify zero server uploads with DevTools, and inspect our security model.',
-  alternates: { canonical: 'https://www.uselocalpdf.com/security' },
-};
+  path: '/security',
+});
 
 export default function SecurityPage() {
   return (
@@ -79,7 +80,10 @@ export default function SecurityPage() {
         </p>
         <ul>
           <li>
-            <strong>pdf-lib:</strong> Industry-standard client-side library for creating, merging, splitting, watermarking, encrypting, and modifying PDF byte streams in JavaScript.
+            <strong>QPDF WebAssembly (@neslinesli93/qpdf-wasm):</strong> Full C++ QPDF compiled to WebAssembly running in an isolated Web Worker for 256-bit AES encryption/decryption, lossless structural compression, PDF repair, and annotation flattening.
+          </li>
+          <li>
+            <strong>pdf-lib:</strong> Pure client-side library for creating, merging, splitting, reordering, stamping watermarks, and assembling PDF byte streams in JavaScript.
           </li>
           <li>
             <strong>Mozilla pdfjs-dist:</strong> Mozilla&apos;s battle-tested PDF rendering engine that powers Firefox&apos;s built-in PDF viewer, ensuring secure sandboxed page rendering.
@@ -126,7 +130,12 @@ export default function SecurityPage() {
           </div>
         </div>
 
-        <h2>5. Vulnerability Disclosure &amp; Security Contact</h2>
+        <h2>5. Strict Air-Gapped Mode &amp; OS File Handling</h2>
+        <p>
+          For regulated legal, healthcare, or defense workflows, every tool workspace includes an interactive <strong>Strict Air-Gapped Mode</strong> switch inside the privacy verification badge. When enabled, it forcefully suppresses optional analytics and restricts OCR to the bundled local English engine so zero external CDN downloads occur. When installed as a Progressive Web App, LocalPDF also registers the <strong>PWA File Handling API</strong> so you can open local <code>.pdf</code> files directly into offline browser memory.
+        </p>
+
+        <h2>6. Vulnerability Disclosure &amp; Security Contact</h2>
         <p>
           We welcome responsible security disclosures from developers and researchers. If you identify any potential security vulnerability, cross-site scripting vector, or privacy concern, please contact us directly:
         </p>

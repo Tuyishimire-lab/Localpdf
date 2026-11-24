@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Grid, Plus, Trash2, ArrowUp, ArrowDown, RotateCw, Copy } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Grid, Plus, Trash2, ArrowUp, ArrowDown, RotateCw, Copy, Undo2 } from 'lucide-react';
 import Workspace from '../Workspace';
 import ProgressModal from '../ProgressModal';
 import PagePreview from '../PagePreview';
 import { loadPdf } from '../../../lib/pdfEngine';
+import { loadPdfLibSafely } from '../../../lib/pdfGuard';
 import { downloadFile } from '../../../lib/utils';
+import { toast } from '../../../context/ToastContext';
 import { PDFDocument, degrees } from 'pdf-lib';
 
 export default function OrganizeTool() {
@@ -14,6 +16,7 @@ export default function OrganizeTool() {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [totalPages, setTotalPages] = useState(0);
   const [pageItems, setPageItems] = useState([]); // [{ id, originalIndex, isBlank, rotation }]
+  const [undoStack, setUndoStack] = useState([]);
   
   const [processing, setProcessing] = useState(false);
   const [processedBlob, setProcessedBlob] = useState(null);
@@ -46,18 +49,52 @@ export default function OrganizeTool() {
         rotation: 0
       }));
       setPageItems(items);
+      setUndoStack([]);
     } catch (err) {
       console.error("Error loading PDF", err);
-      alert("Failed to load PDF file.");
+      toast.error("Failed to load PDF file.");
       setFiles([]);
     }
   };
 
+  const commitPageItems = useCallback((nextItems) => {
+    setPageItems((prev) => {
+      setUndoStack((stack) => [...stack.slice(-24), prev]);
+      return nextItems;
+    });
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    setUndoStack((stack) => {
+      if (stack.length === 0) return stack;
+      const previous = stack[stack.length - 1];
+      setPageItems(previous);
+      return stack.slice(0, -1);
+    });
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        if (undoStack.length > 0) {
+          e.preventDefault();
+          handleUndo();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [undoStack.length, handleUndo]);
+
   const handleClear = () => {
+    pdfDoc?.destroy?.();
     setFiles([]);
     setPdfDoc(null);
     setTotalPages(0);
     setPageItems([]);
+    setUndoStack([]);
     setProcessedBlob(null);
   };
 
@@ -70,13 +107,13 @@ export default function OrganizeTool() {
     const temp = newItems[index];
     newItems[index] = newItems[targetIndex];
     newItems[targetIndex] = temp;
-    setPageItems(newItems);
+    commitPageItems(newItems);
   };
 
   const deletePage = (index) => {
     const newItems = [...pageItems];
     newItems.splice(index, 1);
-    setPageItems(newItems);
+    commitPageItems(newItems);
   };
 
   const duplicatePage = (index) => {
@@ -89,7 +126,7 @@ export default function OrganizeTool() {
     };
     
     newItems.splice(index + 1, 0, duplicate);
-    setPageItems(newItems);
+    commitPageItems(newItems);
   };
 
   const rotatePage = (index) => {
@@ -98,12 +135,12 @@ export default function OrganizeTool() {
       ...newItems[index],
       rotation: (newItems[index].rotation + 90) % 360
     };
-    setPageItems(newItems);
+    commitPageItems(newItems);
   };
 
   const insertBlankPage = () => {
-    setPageItems((prev) => [
-      ...prev,
+    commitPageItems([
+      ...pageItems,
       {
         id: generateUid(),
         originalIndex: -1,
@@ -134,7 +171,7 @@ export default function OrganizeTool() {
     updated.splice(draggedIndex, 1);
     updated.splice(index, 0, draggedItem);
     
-    setPageItems(updated);
+    commitPageItems(updated);
     setDraggedIndex(null);
   };
 
@@ -144,7 +181,7 @@ export default function OrganizeTool() {
 
   const handleProcess = async () => {
     if (pageItems.length === 0 || files.length === 0) {
-      alert("Please ensure your document has at least one page.");
+      toast.error("Please ensure your document has at least one page.");
       return;
     }
     setProcessing(true);
@@ -152,7 +189,7 @@ export default function OrganizeTool() {
 
     try {
       const fileBytes = await files[0].arrayBuffer();
-      const srcPdf = await PDFDocument.load(fileBytes, { ignoreEncryption: true });
+      const srcPdf = await loadPdfLibSafely(fileBytes);
       const targetPdf = await PDFDocument.create();
 
       for (const item of pageItems) {
@@ -164,7 +201,8 @@ export default function OrganizeTool() {
           const [copiedPage] = await targetPdf.copyPages(srcPdf, [item.originalIndex]);
           
           if (item.rotation) {
-            copiedPage.setRotation(degrees(item.rotation));
+            const currentAngle = copiedPage.getRotation().angle;
+            copiedPage.setRotation(degrees((currentAngle + item.rotation) % 360));
           }
           targetPdf.addPage(copiedPage);
         }
@@ -176,7 +214,7 @@ export default function OrganizeTool() {
       setProcessing(false);
     } catch (err) {
       console.error("Assembly error:", err);
-      alert("Failed to organize and re-compile PDF.");
+      toast.error(err?.message || "Failed to organize and re-compile PDF.");
       setModalOpen(false);
       setProcessing(false);
     }
@@ -184,7 +222,7 @@ export default function OrganizeTool() {
 
   const handleDownload = () => {
     if (!processedBlob) return;
-    const name = files[0].name.replace('.pdf', '');
+    const name = files[0].name.replace(/\.pdf$/i, '');
     downloadFile(processedBlob, `${name}_organized.pdf`);
   };
 
@@ -332,15 +370,26 @@ export default function OrganizeTool() {
       >
         <h3 className="options-title">Page List Operations</h3>
         
-        <div className="options-group">
+        <div className="options-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <button 
             type="button" 
             className="btn-secondary" 
             onClick={insertBlankPage}
             style={{ width: '100%' }}
           >
-            <Plus size={16} />
+            <Plus size={16} aria-hidden="true" />
             Insert Blank Page
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handleUndo}
+            disabled={undoStack.length === 0}
+            title="Undo (Ctrl/Cmd+Z)"
+            style={{ width: '100%' }}
+          >
+            <Undo2 size={16} aria-hidden="true" />
+            Undo ({undoStack.length})
           </button>
         </div>
 
@@ -360,6 +409,7 @@ export default function OrganizeTool() {
         resultBlob={processedBlob}
         resultFileName="organized_document.pdf"
         currentToolId="organize"
+        inputSize={files[0]?.size}
       />
     </>
   );

@@ -15,7 +15,7 @@ export const metadata = {
     description: 'Free step-by-step guides on compressing, merging, converting, signing, and securing PDF files.',
     url: `${BASE}/blog`,
     siteName: 'LocalPDF',
-    images: [{ url: `${BASE}/logo.png`, width: 800, height: 800, alt: 'LocalPDF Blog' }],
+    images: [{ url: `${BASE}/og-image.png`, width: 1200, height: 630, alt: 'LocalPDF Blog' }],
     locale: 'en_US',
     type: 'website',
   },
@@ -23,7 +23,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'PDF Guides & Tutorials | LocalPDF Blog',
     description: 'Free step-by-step guides on compressing, merging, converting, signing, and securing PDF files.',
-    images: [`${BASE}/logo.png`],
+    images: [`${BASE}/og-image.png`],
   },
 };
 

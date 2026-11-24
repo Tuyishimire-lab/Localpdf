@@ -2,7 +2,7 @@
 
 > **100% private, client-side PDF tools — your files never leave your browser.**
 
-LocalPDF is a free, open-source suite of 21 PDF utilities built entirely in Next.js.
+LocalPDF is a free, open-source suite of 29 PDF utilities built entirely in Next.js.
 All processing happens in-browser via WebAssembly and JavaScript libraries. No server uploads, no accounts, no API keys required.
 
 🌐 **Live site:** [uselocalpdf.com](https://www.uselocalpdf.com)
@@ -32,8 +32,22 @@ All processing happens in-browser via WebAssembly and JavaScript libraries. No s
 | **Word/TXT to PDF** | Convert `.docx` and `.txt` files to PDF entirely in-browser |
 | **PDF to Word** | Convert PDFs to editable `.docx` documents |
 | **Flatten PDF** | Convert form fields and annotations to static content |
-| **Compare PDF** | Side-by-side visual diff of two PDFs |
-| **Repair PDF** | Attempt in-browser recovery of corrupted PDF files |
+| **Compare PDF** | Side-by-side visual & text diff of two PDFs + downloadable HTML report |
+| **Repair PDF** | QPDF WebAssembly structural recovery of corrupted PDF files |
+| **PDF to Excel / CSV** | Extract PDF tables into `.xlsx` workbooks or `.csv` files locally |
+| **Crop PDF** | Visual CropBox margin trimmer across pages and rotations |
+| **Extract Images** | Save embedded raster images from PDFs as lossless PNGs or ZIP |
+| **Fill PDF Forms** | Complete interactive AcroForm fields, checkboxes, and dropdowns |
+| **Metadata & Scrubber** | Inspect, edit, or strip identifying PDF metadata fields |
+| **Bates Numbering** | Continuous legal Bates stamping and custom headers/footers |
+| **Split by Size / Bookmarks** | Split PDFs into MB limits or automatic bookmark chapters |
+| **Grayscale PDF** | Monochrome print-ready PDF conversion with contrast tuning |
+| **PDF Recipes (`/recipes`)** | Build, save & run reusable multi-step pipelines (Merge → Bates → Watermark → Compress → AES-256) |
+
+### Platform & Privacy Highlights
+- **Strict Air-Gapped Mode**: Global switch (`localpdf_airgapped`) inside every privacy verification badge to suppress optional analytics and block external OCR CDN packs.
+- **PWA File Handling API**: Installed desktop PWA opens `.pdf` files directly from the OS via `window.launchQueue`.
+- **Opt-in Local WebGPU / On-Device AI**: Enhanced local synthesis and Chrome/Edge `LanguageModel` support in AI PDF Chat alongside zero-download TF-IDF.
 
 ---
 
@@ -42,14 +56,14 @@ All processing happens in-browser via WebAssembly and JavaScript libraries. No s
 | Layer | Library |
 |---|---|
 | Framework | [Next.js 16](https://nextjs.org) (App Router) |
-| PDF manipulation | [pdf-lib](https://pdf-lib.js.org) |
+| PDF manipulation | [pdf-lib](https://pdf-lib.js.org) + [@neslinesli93/qpdf-wasm](https://www.npmjs.com/package/@neslinesli93/qpdf-wasm) |
 | PDF rendering / parsing | [pdfjs-dist](https://mozilla.github.io/pdf.js/) |
 | OCR | [Tesseract.js](https://tesseract.projectnaptha.com/) |
 | Canvas editing | [Fabric.js](http://fabricjs.com/) |
 | Word document export | [docx](https://docx.js.org/) |
-| Analytics | [@vercel/analytics](https://vercel.com/analytics) |
+| Analytics | Consent-gated [@vercel/analytics](https://vercel.com/analytics) + optional GA4 |
 | Icons | [lucide-react](https://lucide.dev/) |
-| Styling | Tailwind CSS v4 |
+| Styling | Tailwind CSS v4 + CSS Design Tokens |
 | Unit tests | Jest + Testing Library |
 | E2E tests | Playwright |
 
@@ -59,14 +73,14 @@ All processing happens in-browser via WebAssembly and JavaScript libraries. No s
 
 ### Prerequisites
 
-- Node.js ≥ 18
+- Node.js ≥ 20.9.0
 - npm ≥ 9
 
 ### Installation
 
 ```bash
-git clone https://github.com/your-org/ilovepdf-clone.git
-cd ilovepdf-clone
+git clone https://github.com/Tuyishimire-lab/Localpdf.git
+cd Localpdf
 npm install
 ```
 

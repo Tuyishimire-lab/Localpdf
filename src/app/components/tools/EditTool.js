@@ -18,8 +18,11 @@ import {
 import Workspace from '../Workspace';
 import ProgressModal from '../ProgressModal';
 import { loadPdf, renderPageToDataUrl } from '../../../lib/pdfEngine';
+import { loadPdfLibSafely } from '../../../lib/pdfGuard';
+import { mapNormalizedRectToPdf } from '../../../lib/pdfCoords';
 import { downloadFile } from '../../../lib/utils';
-import { PDFDocument, rgb } from 'pdf-lib';
+import { toast } from '../../../context/ToastContext';
+import { rgb, degrees } from 'pdf-lib';
 
 function hexToPdfRgb(hex) {
   if (!hex || hex === 'transparent') return rgb(1, 1, 1);
@@ -52,6 +55,17 @@ export default function EditTool() {
   const [fabricLib, setFabricLib] = useState(null);
   const [canvasObjects, setCanvasObjects] = useState({}); // { [pageIndex]: { objects: [], width: number, height: number } }
   const canvasObjectsRef = useRef({});
+  const undoStacksRef = useRef({});
+  const currentSnapshotRef = useRef([]);
+  const isRestoringRef = useRef(false);
+  const activePageRef = useRef(0);
+  const [canUndo, setCanUndo] = useState(false);
+
+  useEffect(() => {
+    activePageRef.current = activePage;
+    setCanUndo((undoStacksRef.current[activePage]?.length || 0) > 0);
+  }, [activePage]);
+
   useEffect(() => {
     canvasObjectsRef.current = canvasObjects;
   }, [canvasObjects]);
@@ -171,6 +185,21 @@ export default function EditTool() {
     canvas.on('selection:updated', handleSelection);
     canvas.on('selection:cleared', handleSelection);
 
+    const recordUndoChange = () => {
+      if (isRestoringRef.current) return;
+      const pageIdx = activePageRef.current;
+      const prevSnap = currentSnapshotRef.current || [];
+      const nextSnap = canvas.getObjects().map((obj) => obj.toObject());
+      const stack = undoStacksRef.current[pageIdx] || [];
+      undoStacksRef.current[pageIdx] = [...stack.slice(-24), prevSnap];
+      currentSnapshotRef.current = nextSnap;
+      setCanUndo(true);
+    };
+
+    canvas.on('object:added', recordUndoChange);
+    canvas.on('object:modified', recordUndoChange);
+    canvas.on('object:removed', recordUndoChange);
+
     return () => {
       canvas.dispose();
       fabricCanvasRef.current = null;
@@ -199,6 +228,7 @@ export default function EditTool() {
     }
 
     // Set background image
+    isRestoringRef.current = true;
     canvas.clear();
     canvas.isDrawingMode = false;
     setActiveTool('select');
@@ -221,23 +251,83 @@ export default function EditTool() {
           enlivenedObjects.forEach((obj) => {
             canvas.add(obj);
           });
+          currentSnapshotRef.current = canvas.getObjects().map((obj) => obj.toObject());
+          isRestoringRef.current = false;
           canvas.renderAll();
         });
+      } else {
+        currentSnapshotRef.current = [];
+        isRestoringRef.current = false;
       }
     });
   }, [pageImg, activePage, fabricLib]);
 
-  // Handle keyboard nudging and deletion
+  const handleUndo = () => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas || !fabricLib) return;
+    const pageIdx = activePageRef.current;
+    const stack = undoStacksRef.current[pageIdx] || [];
+    if (stack.length === 0) return;
+
+    const previousObjects = stack[stack.length - 1];
+    undoStacksRef.current[pageIdx] = stack.slice(0, -1);
+    setCanUndo(undoStacksRef.current[pageIdx].length > 0);
+
+    isRestoringRef.current = true;
+    canvas.getObjects().forEach((obj) => canvas.remove(obj));
+    if (previousObjects.length > 0) {
+      fabricLib.util.enlivenObjects(previousObjects, (enlivenedObjects) => {
+        enlivenedObjects.forEach((obj) => canvas.add(obj));
+        currentSnapshotRef.current = canvas.getObjects().map((obj) => obj.toObject());
+        isRestoringRef.current = false;
+        setSelectedType(null);
+        canvas.renderAll();
+      });
+    } else {
+      currentSnapshotRef.current = [];
+      isRestoringRef.current = false;
+      setSelectedType(null);
+      canvas.renderAll();
+    }
+  };
+
+  // Handle keyboard nudging, deletion, and Ctrl/Cmd+Z undo
   useEffect(() => {
     const handleKeyDown = (e) => {
       const canvas = fabricCanvasRef.current;
       if (!canvas) return;
 
       const activeObj = canvas.getActiveObject();
-      if (!activeObj) return;
+      if (activeObj?.isEditing) return;
 
-      // Don't nudge if actively editing text input
-      if (activeObj.isEditing) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        const stack = undoStacksRef.current[activePageRef.current] || [];
+        if (stack.length > 0) {
+          e.preventDefault();
+          const prevObjs = stack[stack.length - 1];
+          undoStacksRef.current[activePageRef.current] = stack.slice(0, -1);
+          setCanUndo(undoStacksRef.current[activePageRef.current].length > 0);
+          isRestoringRef.current = true;
+          canvas.getObjects().forEach((obj) => canvas.remove(obj));
+          if (prevObjs.length > 0 && fabricLib) {
+            fabricLib.util.enlivenObjects(prevObjs, (enlivenedObjects) => {
+              enlivenedObjects.forEach((obj) => canvas.add(obj));
+              currentSnapshotRef.current = canvas.getObjects().map((obj) => obj.toObject());
+              isRestoringRef.current = false;
+              setSelectedType(null);
+              canvas.renderAll();
+            });
+          } else {
+            currentSnapshotRef.current = [];
+            isRestoringRef.current = false;
+            setSelectedType(null);
+            canvas.renderAll();
+          }
+        }
+        return;
+      }
+
+      if (!activeObj) return;
 
       const step = e.shiftKey ? 15 : 2;
 
@@ -279,7 +369,7 @@ export default function EditTool() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [fabricLib]);
 
   const saveCurrentPageState = () => {
     const canvas = fabricCanvasRef.current;
@@ -303,6 +393,9 @@ export default function EditTool() {
     setActivePage(0);
     prevPageRef.current = 0;
     setCanvasObjects({});
+    undoStacksRef.current = {};
+    currentSnapshotRef.current = [];
+    setCanUndo(false);
     setProcessedBlob(null);
 
     try {
@@ -311,7 +404,7 @@ export default function EditTool() {
       setTotalPages(doc.numPages);
     } catch (err) {
       console.error("Error loading PDF", err);
-      alert("Failed to load PDF file.");
+      toast.error("Failed to load PDF file.");
       setFiles([]);
     }
   };
@@ -324,6 +417,9 @@ export default function EditTool() {
     prevPageRef.current = 0;
     setPageImg(null);
     setCanvasObjects({});
+    undoStacksRef.current = {};
+    currentSnapshotRef.current = [];
+    setCanUndo(false);
     setProcessedBlob(null);
     setSelectedType(null);
   };
@@ -343,11 +439,14 @@ export default function EditTool() {
       canvas.renderAll();
     } else {
       canvas.isDrawingMode = false;
-      
+      const activeZoom = zoomRef.current || 1;
+      const baseWidth = canvas.backgroundImage ? canvas.backgroundImage.width : canvas.width / activeZoom;
+      const baseHeight = canvas.backgroundImage ? canvas.backgroundImage.height : canvas.height / activeZoom;
+
       if (tool === 'text') {
         const text = new fabricLib.IText('Add text overlay', {
-          left: canvas.width / 2 - 80,
-          top: canvas.height / 2 - 15,
+          left: Math.max(0, baseWidth / 2 - 80),
+          top: Math.max(0, baseHeight / 2 - 15),
           fontFamily: 'Helvetica',
           fontSize: 24,
           fill: brushColor,
@@ -361,8 +460,8 @@ export default function EditTool() {
         setActiveTool('select');
       } else if (tool === 'whiteout') {
         const rect = new fabricLib.Rect({
-          left: canvas.width / 2 - 60,
-          top: canvas.height / 2 - 20,
+          left: Math.max(0, baseWidth / 2 - 60),
+          top: Math.max(0, baseHeight / 2 - 20),
           width: 120,
           height: 40,
           fill: '#ffffff',
@@ -433,7 +532,7 @@ export default function EditTool() {
       saveCurrentPageState(); // Commit active canvas changes
       
       const fileBytes = await files[0].arrayBuffer();
-      const pdfDocObj = await PDFDocument.load(fileBytes, { ignoreEncryption: true });
+      const pdfDocObj = await loadPdfLibSafely(fileBytes);
       const pages = pdfDocObj.getPages();
 
       // Combined state map including live unsaved modifications
@@ -453,39 +552,38 @@ export default function EditTool() {
 
         if (hasObjects) {
           const targetPage = pages[i];
-          const { width: pdfPageWidth, height: pdfPageHeight } = targetPage.getSize();
+          const srcW = Math.max(1, pageData.width || 600);
+          const srcH = Math.max(1, pageData.height || 800);
 
-          // 1. Draw the native whiteout rectangles directly on the PDF page first (renders crisp vectors, no antialiasing grey fringe)
-          pageData.objects.forEach(obj => {
+          // 1. Draw the native whiteout rectangles directly on the PDF page first (respecting CropBox & /Rotate)
+          pageData.objects.forEach((obj) => {
             if (obj.type === 'rect') {
-              const scaleX = pdfPageWidth / pageData.width;
-              const scaleY = pdfPageHeight / pageData.height;
-
-              const rectWidth = (obj.width * (obj.scaleX || 1)) * scaleX;
-              const rectHeight = (obj.height * (obj.scaleY || 1)) * scaleY;
-              const rectX = obj.left * scaleX;
-              // Translate y from top-left origin to bottom-left origin
-              const rectY = pdfPageHeight - ((obj.top + (obj.height * (obj.scaleY || 1))) * scaleY);
+              const objW = obj.width * (obj.scaleX || 1);
+              const objH = obj.height * (obj.scaleY || 1);
+              const mapped = mapNormalizedRectToPdf(targetPage, {
+                x: obj.left / srcW,
+                y: obj.top / srcH,
+                width: objW / srcW,
+                height: objH / srcH,
+              });
 
               targetPage.drawRectangle({
-                x: rectX,
-                y: rectY,
-                width: rectWidth,
-                height: rectHeight,
-                color: hexToPdfRgb(obj.fill)
+                x: mapped.x,
+                y: mapped.y,
+                width: mapped.width,
+                height: mapped.height,
+                color: hexToPdfRgb(obj.fill),
+                rotate: degrees(mapped.rotateAngle),
               });
             }
           });
 
           // 2. Draw any remaining overlays (text, paths) using high-res PNG
-          const hasNonRect = pageData.objects.some(obj => obj.type !== 'rect');
+          const hasNonRect = pageData.objects.some((obj) => obj.type !== 'rect');
           if (hasNonRect) {
-            const targetWidth = pageData.width || pdfPageWidth * 1.2;
-            const targetHeight = pageData.height || pdfPageHeight * 1.2;
-
             const tempEl = document.createElement('canvas');
-            tempEl.width = targetWidth;
-            tempEl.height = targetHeight;
+            tempEl.width = srcW;
+            tempEl.height = srcH;
 
             const tempCanvas = new fabricLib.Canvas(tempEl);
 
@@ -505,7 +603,7 @@ export default function EditTool() {
             // Export the transparent overlay at 2.5x multiplier for crispness
             const overlayDataUrl = tempCanvas.toDataURL({
               format: 'png',
-              multiplier: 2.5
+              multiplier: 2.5,
             });
 
             tempCanvas.dispose();
@@ -513,13 +611,20 @@ export default function EditTool() {
             // Embed drawing overlay PNG
             const imageBytes = await fetch(overlayDataUrl).then((res) => res.arrayBuffer());
             const embeddedImage = await pdfDocObj.embedPng(imageBytes);
-
-            // Draw the overlay layer matching page coordinates
-            targetPage.drawImage(embeddedImage, {
+            const mappedFull = mapNormalizedRectToPdf(targetPage, {
               x: 0,
               y: 0,
-              width: pdfPageWidth,
-              height: pdfPageHeight
+              width: 1,
+              height: 1,
+            });
+
+            // Draw the overlay layer matching visual page coordinates
+            targetPage.drawImage(embeddedImage, {
+              x: mappedFull.x,
+              y: mappedFull.y,
+              width: mappedFull.width,
+              height: mappedFull.height,
+              rotate: degrees(mappedFull.rotateAngle),
             });
           }
         }
@@ -531,7 +636,7 @@ export default function EditTool() {
       setProcessing(false);
     } catch (err) {
       console.error("Canvas drawing compilation error:", err);
-      alert("Failed to render drawings onto PDF.");
+      toast.error(err?.message || "Failed to render drawings onto PDF.");
       setModalOpen(false);
       setProcessing(false);
     }
@@ -539,7 +644,7 @@ export default function EditTool() {
 
   const handleDownload = () => {
     if (!processedBlob) return;
-    const name = files[0].name.replace('.pdf', '');
+    const name = files[0].name.replace(/\.pdf$/i, '');
     downloadFile(processedBlob, `${name}_edited.pdf`);
   };
 
@@ -610,6 +715,19 @@ export default function EditTool() {
           type="button"
         >
           Reset
+        </button>
+
+        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }}></div>
+
+        <button
+          className="rotate-card-btn"
+          style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+          onClick={handleUndo}
+          disabled={!canUndo}
+          title="Undo (Ctrl/Cmd+Z)"
+          type="button"
+        >
+          <Undo2 size={13} aria-hidden="true" /> Undo
         </button>
       </div>
 
@@ -702,7 +820,7 @@ export default function EditTool() {
             <button
               type="button"
               className={`segment-btn ${activeTool === 'draw' ? 'active' : ''}`}
-              onClick={() => toggleDrawingMode()}
+              onClick={() => handleToolSelect(activeTool === 'draw' ? 'select' : 'draw')}
               title="Freehand Draw"
             >
               <PenTool size={16} style={{ margin: 'auto' }} />
@@ -727,7 +845,7 @@ export default function EditTool() {
 
               {/* Brush width slider */}
               <div>
-                <label style={{ display: 'flex', justifyContent: 'between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
                   <span>Line Thickness</span>
                   <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>{brushWidth}px</span>
                 </label>
@@ -836,7 +954,7 @@ export default function EditTool() {
 
                   {/* Font Size slider */}
                   <div>
-                    <label style={{ display: 'flex', justifyContent: 'between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                    <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
                       <span>Font Size</span>
                       <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>{selectedFontSize}px</span>
                     </label>
@@ -981,6 +1099,7 @@ export default function EditTool() {
         resultBlob={processedBlob}
         resultFileName="edited_document.pdf"
         currentToolId="edit"
+        inputSize={files[0]?.size}
       />
     </>
   );

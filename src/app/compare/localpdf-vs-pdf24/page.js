@@ -2,12 +2,13 @@ export const dynamic = 'force-static';
 
 import Link from 'next/link';
 import { ArrowLeft, Check, X } from 'lucide-react';
+import { buildPageMetadata } from '../../../lib/seo';
 
-export const metadata = {
+export const metadata = buildPageMetadata({
   title: 'LocalPDF vs PDF24 – Privacy, Features & Pricing Comparison',
   description: 'Compare LocalPDF and PDF24: client-side vs server processing, tool coverage, privacy policies, and file size handling.',
-  alternates: { canonical: 'https://www.uselocalpdf.com/compare/localpdf-vs-pdf24' },
-};
+  path: '/compare/localpdf-vs-pdf24',
+});
 
 const rows = [
   // Architecture & Privacy
@@ -21,16 +22,18 @@ const rows = [
   { feature: 'Account required', localpdf: false, competitor: false, note: null },
   { feature: 'Desktop app', localpdf: false, competitor: true, note: 'PDF24: Windows only' },
   // Tools
-  { feature: 'Compress / Merge / Split', localpdf: true, competitor: true, note: 'LocalPDF: instant, no upload' },
-  { feature: 'Sign PDF', localpdf: true, competitor: true, note: null },
-  { feature: 'OCR', localpdf: true, competitor: true, note: 'LocalPDF: offline via Tesseract.js' },
+  { feature: 'Compress / Merge / Split', localpdf: true, competitor: true, note: 'Lossless QPDF WASM + instant' },
+  { feature: 'Batch Multi-PDF ZIP', localpdf: true, competitor: true, note: 'Compress, Watermark, Protect, Rotate, Number' },
+  { feature: 'AES-256 Encryption (WASM)', localpdf: true, competitor: true, note: 'LocalPDF: zero key transmission' },
+  { feature: 'Sign PDF', localpdf: true, competitor: true, note: 'Draw, type, image upload & date stamps' },
+  { feature: 'OCR & Searchable PDF', localpdf: true, competitor: true, note: 'Offline via Tesseract.js' },
   { feature: 'PDF to Word', localpdf: true, competitor: true, note: null },
   { feature: 'Redact & Sanitize', localpdf: true, competitor: true, note: 'LocalPDF: 100% client-side' },
   { feature: 'AI Summarizer & Chat', localpdf: true, competitor: false, note: 'LocalPDF: Private, in-browser' },
   { feature: 'PDF to PowerPoint', localpdf: false, competitor: true, note: 'PDF24 exclusive' },
   { feature: 'PDF to ePub', localpdf: false, competitor: true, note: 'PDF24 exclusive' },
   { feature: 'Repair PDF', localpdf: true, competitor: true, note: null },
-  { feature: 'Compare PDF (visual diff)', localpdf: true, competitor: false, note: 'LocalPDF exclusive' },
+  { feature: 'Compare PDF', localpdf: true, competitor: false, note: 'Visual pixel & text diff + report' },
   { feature: 'Processing History', localpdf: true, competitor: false, note: 'LocalPDF: stored locally' },
 ];
 

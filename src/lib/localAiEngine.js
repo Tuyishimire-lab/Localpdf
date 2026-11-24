@@ -39,8 +39,18 @@ export async function parsePdfTextChunks(pdfDoc, onProgress) {
 
   // 1. Attempt fast native text stream extraction
   for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+    onProgress?.({
+      status: `Extracting page ${pageNum} of ${totalPages}...`,
+      current: pageNum,
+      total: totalPages,
+    });
     const page = await pdfDoc.getPage(pageNum);
-    const textContent = await page.getTextContent();
+    let textContent;
+    try {
+      textContent = await page.getTextContent();
+    } finally {
+      page.cleanup?.();
+    }
     const pageText = textContent.items
       .map((item) => item.str)
       .join(' ')
@@ -93,7 +103,7 @@ export async function parsePdfTextChunks(pdfDoc, onProgress) {
     onProgress && onProgress({ status: 'Sparse text detected. Running local OCR on affected pages...' });
 
     try {
-      const Tesseract = (await import('tesseract.js')).default;
+      const { recognizeImage } = await import('./ocrEngine.js');
 
       for (const pageNum of sparsePagesForOcr) {
         onProgress && onProgress({ status: `Running OCR on page ${pageNum} of ${totalPages}...` });
@@ -105,11 +115,17 @@ export async function parsePdfTextChunks(pdfDoc, onProgress) {
         canvas.height = viewport.height;
         const ctx = canvas.getContext('2d');
 
-        ctx.filter = 'grayscale(1) contrast(1.8)';
-        await page.render({ canvasContext: ctx, viewport }).promise;
-
-        const imgDataUrl = canvas.toDataURL('image/png');
-        const ret = await Tesseract.recognize(imgDataUrl, 'eng');
+        let imgDataUrl;
+        try {
+          ctx.filter = 'grayscale(1) contrast(1.8)';
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          imgDataUrl = canvas.toDataURL('image/png');
+        } finally {
+          page.cleanup?.();
+          canvas.width = 0;
+          canvas.height = 0;
+        }
+        const ret = await recognizeImage(imgDataUrl, 'eng');
         const ocrText = (ret.data.text || '').replace(/\s+/g, ' ').trim();
 
         if (ocrText) {
@@ -220,81 +236,133 @@ function sanitizeLeadText(text) {
     .slice(0, 300);
 }
 
+const CATEGORY_DEFINITIONS = [
+  {
+    type: 'legal',
+    label: 'Legal Contract / Agreement',
+    icon: '📜',
+    terms: ['agreement', 'contract', 'party', 'obligations', 'governing law', 'liability', 'termination', 'shall', 'clause', 'indemnify'],
+    prompts: [
+      'What are the main party obligations?',
+      'What are the termination conditions?',
+      'What is the governing law?',
+      'Summarize key liabilities & penalties',
+    ],
+  },
+  {
+    type: 'medical',
+    label: 'Medical / Clinical Report',
+    icon: '🏥',
+    terms: ['patient', 'diagnosis', 'treatment', 'dosage', 'clinical', 'symptoms', 'prognosis', 'prescribed', 'medication', 'hospital', 'physician'],
+    prompts: [
+      'What is the diagnosis?',
+      'List prescribed medications & dosages',
+      'What are the treatment recommendations?',
+      'Summarize key findings & test results',
+    ],
+  },
+  {
+    type: 'finance',
+    label: 'Financial / Budget / Purchase Order',
+    icon: '💼',
+    terms: ['invoice', 'purchase order', 'budget', 'expenditure', 'payment', 'payments', 'tax', 'vendor', 'billing', 'receipt', 'subtotal', 'payroll', 'fiscal', 'revenue', 'usd', 'eur', 'rwf', 'tax bill'],
+    prompts: [
+      'What is the total budget/amount?',
+      'List all key line items & costs',
+      'Who are the vendors or parties?',
+      'Summarize payment & incentive policy',
+    ],
+  },
+  {
+    type: 'academic',
+    label: 'Academic / Research Paper',
+    icon: '🎓',
+    terms: ['abstract', 'methodology', 'hypothesis', 'findings', 'references', 'bibliography', 'conclusion', 'dataset', 'figure', 'journal', 'doi'],
+    prompts: [
+      'What is the research hypothesis?',
+      'Summarize the methodology',
+      'What are the key findings?',
+      'List cited references & authors',
+    ],
+  },
+  {
+    type: 'sales',
+    label: 'Sales / Marketing / Competitive Analysis',
+    icon: '📊',
+    terms: ['competitor', 'competitors', 'sales', 'customer', 'customers', 'promotion', 'discount', 'brand', 'campaign', 'objection', 'objections', 'retail', 'market share', 'field exercise', 'promoter'],
+    prompts: [
+      'Who are the main competitors compared?',
+      'What promotions, discounts, or bundles are listed?',
+      'Who are the target customer groups?',
+      'Summarize the main takeaways & selling points',
+    ],
+  },
+  {
+    type: 'technical',
+    label: 'Technical / Software / Spec',
+    icon: '💻',
+    terms: ['architecture', 'api', 'database', 'typescript', 'javascript', 'python', 'repository', 'deployment', 'server', 'endpoint', 'algorithm', 'source code', 'schema'],
+    prompts: [
+      'What architecture or components are described?',
+      'List key APIs, schemas, or modules mentioned',
+      'What technical risks or requirements are highlighted?',
+      'Summarize recommended implementation steps',
+    ],
+  },
+  {
+    type: 'resume',
+    label: 'Resume / CV / Profile',
+    icon: '👤',
+    terms: ['curriculum vitae', 'resume', 'work experience', 'education', 'certifications', 'skills', 'employment history', 'references available'],
+    prompts: [
+      'Summarize work experience and roles',
+      'What core technical or professional skills are listed?',
+      'What education and certifications are mentioned?',
+      'Highlight key achievements',
+    ],
+  },
+];
+
+const COMPILED_CATEGORY_MATCHERS = CATEGORY_DEFINITIONS.map((cat) => ({
+  ...cat,
+  matchers: cat.terms.map((term) => {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+    return new RegExp(`\\b${escaped}\\b`, 'i');
+  }),
+}));
+
+function hasWordTerm(text, regex) {
+  return regex.test(text);
+}
+
 /**
- * Smart Document Category Detection (Legal, Medical, Finance, Academic, General). (Fix 7)
- * Priority when tied: legal > medical > finance > academic > general.
+ * Smart Document Category Detection using whole-word boundary matching.
+ * Priority when tied: legal > medical > finance > academic > sales > technical > resume > general.
  * @param {string} fullText
  */
 export function detectDocumentCategory(fullText) {
-  const text = fullText.toLowerCase();
+  const text = String(fullText || '');
+  let bestCategory = null;
+  let bestScore = 0;
 
-  const legalTerms    = ['agreement', 'contract', 'party', 'obligations', 'governing law', 'liability', 'termination', 'shall', 'clause', 'indemnify'];
-  const medicalTerms  = ['patient', 'diagnosis', 'treatment', 'dosage', 'clinical', 'symptoms', 'prognosis', 'prescribed', 'medication', 'hospital', 'physician'];
-  const financeTerms  = ['invoice', 'total', 'budget', 'price', 'payment', 'tax', 'bill', 'vendor', 'purchase', 'order', 'amount', 'expenditure', 'usd', 'rwf', 'eur'];
-  const academicTerms = ['abstract', 'methodology', 'hypothesis', 'findings', 'references', 'bibliography', 'conclusion', 'dataset', 'figure', 'journal', 'doi'];
-
-  let legalScore = 0, medicalScore = 0, financeScore = 0, academicScore = 0;
-
-  legalTerms.forEach((t)    => { if (text.includes(t)) legalScore    += 2; });
-  medicalTerms.forEach((t)  => { if (text.includes(t)) medicalScore  += 2; });
-  financeTerms.forEach((t)  => { if (text.includes(t)) financeScore  += 2; });
-  academicTerms.forEach((t) => { if (text.includes(t)) academicScore += 2; });
-
-  const maxScore = Math.max(legalScore, medicalScore, financeScore, academicScore);
-
-  if (maxScore >= 4) {
-    if (legalScore === maxScore) {
-      return {
-        type: 'legal',
-        label: 'Legal Contract / Agreement',
-        icon: '📜',
-        prompts: [
-          'What are the main party obligations?',
-          'What are the termination conditions?',
-          'What is the governing law?',
-          'Summarize key liabilities & penalties',
-        ],
-      };
+  for (const cat of COMPILED_CATEGORY_MATCHERS) {
+    let score = 0;
+    for (const regex of cat.matchers) {
+      if (hasWordTerm(text, regex)) score += 2;
     }
-    if (medicalScore === maxScore) {
-      return {
-        type: 'medical',
-        label: 'Medical / Clinical Report',
-        icon: '🏥',
-        prompts: [
-          'What is the diagnosis?',
-          'List prescribed medications & dosages',
-          'What are the treatment recommendations?',
-          'Summarize key findings & test results',
-        ],
-      };
+    if (score > bestScore) {
+      bestScore = score;
+      bestCategory = cat;
     }
-    if (financeScore === maxScore) {
-      return {
-        type: 'finance',
-        label: 'Financial / Budget / Purchase Order',
-        icon: '💼',
-        prompts: [
-          'What is the total budget/amount?',
-          'List all key line items & costs',
-          'Who are the vendors or parties?',
-          'Summarize payment & incentive policy',
-        ],
-      };
-    }
-    if (academicScore === maxScore) {
-      return {
-        type: 'academic',
-        label: 'Academic / Research Paper',
-        icon: '🎓',
-        prompts: [
-          'What is the research hypothesis?',
-          'Summarize the methodology',
-          'What are the key findings?',
-          'List cited references & authors',
-        ],
-      };
-    }
+  }
+
+  if (bestCategory && bestScore >= 4) {
+    return {
+      type: bestCategory.type,
+      label: bestCategory.label,
+      icon: bestCategory.icon,
+      prompts: bestCategory.prompts,
+    };
   }
 
   return {
@@ -310,6 +378,26 @@ export function detectDocumentCategory(fullText) {
   };
 }
 
+function buildSuggestedPrompts(category, sortedTokens = []) {
+  const topicWords = sortedTokens.filter((w) => w && w.length >= 3 && !/^\d+$/.test(w));
+  const prompts = ['What is the main summary of this document?'];
+
+  if (topicWords.length >= 2) {
+    prompts.push(`What does this document say about ${topicWords[0]} and ${topicWords[1]}?`);
+  } else if (topicWords.length === 1) {
+    prompts.push(`Summarize everything related to ${topicWords[0]}`);
+  }
+
+  for (const p of category?.prompts || []) {
+    if (prompts.length >= 4) break;
+    if (!prompts.includes(p)) {
+      prompts.push(p);
+    }
+  }
+
+  return prompts.slice(0, 4);
+}
+
 /**
  * Generates executive document summary, statistics, category, and top key topics.
  * Applies position bias + novelty filter to keyPoints selection (Fix 4).
@@ -318,13 +406,20 @@ export function detectDocumentCategory(fullText) {
  * @param {number} totalPages
  */
 export function generateDocumentSummary(chunks, totalPages) {
+  const resolvedTotalPages =
+    typeof totalPages === 'number'
+      ? totalPages
+      : chunks && chunks.length > 0
+        ? Math.max(...chunks.map((c) => c.pageNum || 1))
+        : 0;
+
   if (!chunks || chunks.length === 0) {
     return {
       overview: 'No readable text layer or OCR results were found in this document.',
       keyPoints: ['Use manual tools to view or edit this document.'],
       topTopics: [],
       category: { type: 'general', label: 'Unclassified Document', icon: '📄', prompts: [] },
-      stats: { totalPages, wordCount: 0, readingTimeMinutes: 0, isScannedOcr: false },
+      stats: { totalPages: resolvedTotalPages, wordCount: 0, readingTimeMinutes: 0, isScannedOcr: false, ocrPageCount: 0 },
     };
   }
 
@@ -332,7 +427,8 @@ export function generateDocumentSummary(chunks, totalPages) {
   const words = fullText.split(/\s+/).filter(Boolean);
   const wordCount = words.length;
   const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
-  const isScannedOcr = chunks.some((c) => c.isOcr);
+  const ocrPageCount = new Set(chunks.filter((c) => c.isOcr).map((c) => c.pageNum)).size;
+  const isScannedOcr = ocrPageCount > 0;
 
   const category = detectDocumentCategory(fullText);
 
@@ -386,25 +482,27 @@ export function generateDocumentSummary(chunks, totalPages) {
   }
 
   if (keyPoints.length === 0) {
-    keyPoints.push(`Document contains ${wordCount} words across ${totalPages} pages.`);
+    keyPoints.push(`Document contains ${wordCount} words across ${resolvedTotalPages} pages.`);
   }
 
   // Build overview using the top keyPoint as the lead sentence (Fix 5)
   const rawFirstChunk = chunks[0]?.text || '';
   const cleanLead = sanitizeLeadText(rawFirstChunk);
   const leadSentence = keyPoints[0] || cleanLead.split(/[.!?]/)[0] || '';
-  const overview = `[${category.label}] ${leadSentence ? `${leadSentence.trim()}. ` : ''}This document spans ${totalPages} page(s) with approximately ${wordCount.toLocaleString()} words${isScannedOcr ? ' (extracted via local OCR)' : ''}. Main topics: ${sortedTokens.slice(0, 4).join(', ')}.`;
+  const overview = `[${category.label}] ${leadSentence ? `${leadSentence.trim()}. ` : ''}This document spans ${resolvedTotalPages} page(s) with approximately ${wordCount.toLocaleString()} words${isScannedOcr ? ' (extracted via local OCR)' : ''}. Main topics: ${sortedTokens.slice(0, 4).join(', ')}.`;
 
   return {
     overview,
     keyPoints,
     topTopics: sortedTokens,
     category,
+    suggestedPrompts: buildSuggestedPrompts(category, sortedTokens),
     stats: {
-      totalPages,
+      totalPages: resolvedTotalPages,
       wordCount,
       readingTimeMinutes,
       isScannedOcr,
+      ocrPageCount,
     },
   };
 }
@@ -576,6 +674,25 @@ function getOrAddPage(pdfDoc, y, neededHeight = 20) {
 }
 
 /**
+ * Normalizes text so pdf-lib StandardFonts (WinAnsi encoding) never throw on emojis or smart punctuation.
+ * @param {string} text
+ * @returns {string}
+ */
+function sanitizeWinAnsi(text) {
+  return String(text || '')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2013/g, '-')
+    .replace(/\u2014/g, '--')
+    .replace(/\u2026/g, '...')
+    .replace(/\u00A0/g, ' ')
+    .replace(/[\u2022]/g, '-')
+    .replace(/[^\x20-\x7E\u00A0-\u00FF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Export Summary & Chat Transcript to Client PDF.
  * Supports multi-page output so long summaries and Q&A transcripts are never clipped.
  * @param {any} summary
@@ -592,7 +709,7 @@ export async function exportReportToPdf(summary, messages, fileName) {
   let y = 800;
 
   const draw = (text, opts) => {
-    currentPage.drawText(text, { x: 40, y, ...opts });
+    currentPage.drawText(sanitizeWinAnsi(text), { x: 40, y, ...opts });
   };
 
   // ── Title ──────────────────────────────────────────────────────────────────
@@ -617,7 +734,7 @@ export async function exportReportToPdf(summary, messages, fileName) {
   draw('Executive Overview:', { size: 12, font: boldFont, color: rgb(0.1, 0.1, 0.2) });
   y -= 18;
 
-  for (const line of wrapText(summary?.overview || '', 90)) {
+  for (const line of wrapText(sanitizeWinAnsi(summary?.overview || ''), 90)) {
     ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 14));
     currentPage.drawText(line, { x: 40, y, size: 9.5, font, color: rgb(0.2, 0.25, 0.3) });
     y -= 14;
@@ -630,7 +747,7 @@ export async function exportReportToPdf(summary, messages, fileName) {
   y -= 18;
 
   for (const pt of (summary?.keyPoints || []).slice(0, 5)) {
-    for (const line of wrapText(`- ${pt}`, 88)) {
+    for (const line of wrapText(sanitizeWinAnsi(`- ${pt}`), 88)) {
       ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 14));
       currentPage.drawText(line, { x: 40, y, size: 9, font, color: rgb(0.2, 0.25, 0.3) });
       y -= 14;
@@ -644,7 +761,7 @@ export async function exportReportToPdf(summary, messages, fileName) {
     draw('Main Topics:', { size: 12, font: boldFont, color: rgb(0.1, 0.1, 0.2) });
     y -= 16;
     ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 14));
-    currentPage.drawText(summary.topTopics.join('  ·  '), { x: 40, y, size: 9, font, color: rgb(0.25, 0.35, 0.55) });
+    currentPage.drawText(sanitizeWinAnsi(summary.topTopics.join('  ·  ')), { x: 40, y, size: 9, font, color: rgb(0.25, 0.35, 0.55) });
     y -= 24;
   }
 
@@ -657,14 +774,16 @@ export async function exportReportToPdf(summary, messages, fileName) {
 
     for (const msg of chatMessages) {
       const isUser = msg.sender === 'user';
-      const label = isUser ? `👤 User (${msg.time || ''})` : `🤖 LocalPDF AI (${msg.time || ''})`;
+      const label = sanitizeWinAnsi(
+        isUser ? `User (${msg.time || ''})` : `LocalPDF AI (${msg.time || ''})`
+      );
       const labelColor = isUser ? rgb(0.1, 0.3, 0.6) : rgb(0.1, 0.45, 0.3);
 
       ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 16));
       currentPage.drawText(label, { x: 40, y, size: 9.5, font: boldFont, color: labelColor });
       y -= 14;
 
-      for (const line of wrapText(msg.text || '', 88)) {
+      for (const line of wrapText(sanitizeWinAnsi(msg.text || ''), 88)) {
         ({ page: currentPage, y } = getOrAddPage(pdfDoc, y, 13));
         currentPage.drawText(line, { x: 48, y, size: 9, font, color: rgb(0.2, 0.25, 0.3) });
         y -= 13;
@@ -678,7 +797,7 @@ export async function exportReportToPdf(summary, messages, fileName) {
   const totalPageCount = allPages.length;
   for (let i = 0; i < totalPageCount; i++) {
     const pg = allPages[i];
-    pg.drawText(`LocalPDF Privacy Engine  ·  Page ${i + 1} of ${totalPageCount}`, {
+    pg.drawText(sanitizeWinAnsi(`LocalPDF Privacy Engine  ·  Page ${i + 1} of ${totalPageCount}`), {
       x: 40,
       y: 28,
       size: 7.5,

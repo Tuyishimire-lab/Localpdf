@@ -6,7 +6,9 @@ import Workspace from '../Workspace';
 import ProgressModal from '../ProgressModal';
 import PagePreview from '../PagePreview';
 import { loadPdf } from '../../../lib/pdfEngine';
+import { loadPdfLibSafely } from '../../../lib/pdfGuard';
 import { parsePageRanges, downloadFile } from '../../../lib/utils';
+import { toast } from '../../../context/ToastContext';
 import { PDFDocument } from 'pdf-lib';
 import JSZip from 'jszip';
 
@@ -35,7 +37,7 @@ export default function SplitTool() {
       setRangeInput(`1-${doc.numPages}`);
     } catch (err) {
       console.error("Error loading PDF", err);
-      alert("Failed to load PDF file.");
+      toast.error("Failed to load PDF file.");
       setFiles([]);
     }
   };
@@ -54,7 +56,7 @@ export default function SplitTool() {
 
     try {
       const fileBytes = await files[0].arrayBuffer();
-      const srcPdf = await PDFDocument.load(fileBytes, { ignoreEncryption: true });
+      const srcPdf = await loadPdfLibSafely(fileBytes);
 
       if (splitMode === 'range') {
         const pagesToExtract = parsePageRanges(rangeInput, totalPages);
@@ -92,7 +94,7 @@ export default function SplitTool() {
       setProcessing(false);
     } catch (err) {
       console.error("Splitting error:", err);
-      alert(err.message || "Failed to split PDF.");
+      toast.error(err.message || "Failed to split PDF.");
       setModalOpen(false);
       setProcessing(false);
     }

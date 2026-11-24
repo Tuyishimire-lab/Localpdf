@@ -28,9 +28,9 @@ export const metadata = {
     siteName: 'LocalPDF',
     images: [
       {
-        url: 'https://www.uselocalpdf.com/logo.png',
-        width: 800,
-        height: 800,
+        url: 'https://www.uselocalpdf.com/og-image.png',
+        width: 1200,
+        height: 630,
         alt: 'LocalPDF – Free Client-Side PDF Tools',
       },
     ],
@@ -38,10 +38,10 @@ export const metadata = {
     type: 'website',
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'LocalPDF | Free Online PDF Tools – 100% Private, Client-Side',
     description: 'Merge, split, compress, convert, sign, OCR, watermark, and protect PDFs entirely in your browser. No file uploads, no account needed.',
-    images: ['https://www.uselocalpdf.com/logo.png'],
+    images: ['https://www.uselocalpdf.com/og-image.png'],
   },
 };
 

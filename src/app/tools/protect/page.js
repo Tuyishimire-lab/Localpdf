@@ -4,8 +4,8 @@ import ClientPage from './ClientPage';
 import ToolContentSection from '../../components/ToolContentSection';
 
 const BASE = 'https://www.uselocalpdf.com';
-const title = 'Protect PDF Online – Password Encrypt PDF Files Free | LocalPDF';
-const description = 'Encrypt your PDF documents with owner and user passwords to restrict unauthorized access. AES encryption runs entirely in your browser with no server uploads.';
+const title = 'Protect PDF Online – AES-256 Password Encrypt PDF Files Free | LocalPDF';
+const description = 'Encrypt your PDF documents with AES-256 owner and user passwords via client-side WebAssembly. Complete privacy with zero server uploads.';
 
 export const metadata = {
   title,
@@ -16,11 +16,11 @@ export const metadata = {
     description,
     url: `${BASE}/tools/protect`,
     siteName: 'LocalPDF',
-    images: [{ url: `${BASE}/logo.png`, width: 800, height: 800, alt: 'LocalPDF Protect PDF' }],
+    images: [{ url: `${BASE}/og-image.png`, width: 1200, height: 630, alt: 'LocalPDF Protect PDF' }],
     locale: 'en_US',
     type: 'website',
   },
-  twitter: { card: 'summary_large_image', title, description, images: [`${BASE}/logo.png`] },
+  twitter: { card: 'summary_large_image', title, description, images: [`${BASE}/og-image.png`] },
 };
 
 export default function Page() {

@@ -1,12 +1,13 @@
 export const dynamic = 'force-static';
 
 import Link from 'next/link';
+import { buildPageMetadata } from '../../lib/seo';
 
-export const metadata = {
+export const metadata = buildPageMetadata({
   title: 'Compare PDF Tools – LocalPDF vs Competitors | LocalPDF',
   description: 'Honest feature, privacy, and pricing comparisons between LocalPDF and major PDF tool websites like iLovePDF, Smallpdf, and PDF24.',
-  alternates: { canonical: 'https://www.uselocalpdf.com/compare' },
-};
+  path: '/compare',
+});
 
 const comparisons = [
   {

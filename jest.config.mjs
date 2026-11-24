@@ -20,8 +20,9 @@ const customConfig = {
   // Coverage
   collectCoverageFrom: [
     'src/lib/**/*.js',
+    'src/context/**/*.js',
     'src/app/api/**/*.js',
-    'src/app/components/ToolErrorBoundary.js',
+    'src/app/components/**/*.js',
     '!src/**/*.d.ts',
   ],
 };

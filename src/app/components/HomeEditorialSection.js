@@ -42,7 +42,7 @@ export default function HomeEditorialSection() {
         <div className="home-how-steps">
           <div className="home-how-step">
             <h3 className="home-how-step-title">Select a Tool</h3>
-            <p className="home-how-step-desc">Choose from 21 specialized PDF tools: merge, split, compress, OCR, sign, convert, and more.</p>
+            <p className="home-how-step-desc">Choose from 29 specialized PDF tools—merge, split, compress, OCR, sign, Excel extraction, Bates numbering, AI chat, or multi-step PDF Recipes.</p>
           </div>
           <div className="home-how-step">
             <h3 className="home-how-step-title">Upload Your File</h3>
@@ -74,7 +74,7 @@ export default function HomeEditorialSection() {
           >
             <summary className="faq-question" itemProp="name">Are LocalPDF tools really free with no catch?</summary>
             <div className="faq-answer" itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
-              <p itemProp="text">Yes. All 21 tools are completely free with no subscription, no file size limits, no watermarks on output files, and no account required. The site is supported by non-intrusive advertising that does not affect your document processing.</p>
+              <p itemProp="text">Yes. All 29 tools and multi-step PDF Recipes are completely free with no subscription, no file size limits, no watermarks on output files, and no account required.</p>
             </div>
           </details>
           <details

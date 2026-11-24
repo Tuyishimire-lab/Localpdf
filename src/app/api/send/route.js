@@ -41,6 +41,19 @@ function pruneRateLimitMap() {
   }
 }
 
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function hasCrlf(value) {
+  return /[\r\n]/.test(value);
+}
+
 export async function POST(req) {
   try {
     // ── Rate limit check ────────────────────────────────────────────────────
@@ -55,6 +68,13 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json(
+        { error: 'Invalid request body.' },
+        { status: 400 }
+      );
+    }
+
     const { name, email, subject, message, honeypot } = body;
 
     // ── Honeypot check (bots fill hidden fields, humans don't) ──────────────
@@ -63,17 +83,41 @@ export async function POST(req) {
       return NextResponse.json({ success: true });
     }
 
-    // ── Basic validation ────────────────────────────────────────────────────
-    if (!name || !email || !message) {
+    // ── Type & presence validation ──────────────────────────────────────────
+    if (
+      typeof name !== 'string' ||
+      typeof email !== 'string' ||
+      typeof message !== 'string' ||
+      (subject !== undefined && subject !== null && typeof subject !== 'string')
+    ) {
       return NextResponse.json(
         { error: 'Name, email, and message are required.' },
         { status: 400 }
       );
     }
 
-    // Basic email format check
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedSubject = typeof subject === 'string' ? subject.trim() : '';
+    const trimmedMessage = message.trim();
+
+    if (!trimmedName || !trimmedEmail || !trimmedMessage) {
+      return NextResponse.json(
+        { error: 'Name, email, and message are required.' },
+        { status: 400 }
+      );
+    }
+
+    if (hasCrlf(trimmedName) || hasCrlf(trimmedEmail) || hasCrlf(trimmedSubject)) {
+      return NextResponse.json(
+        { error: 'Invalid characters in contact fields.' },
+        { status: 400 }
+      );
+    }
+
+    // Email length & format check (RFC 5321 max 254)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (trimmedEmail.length > 254 || !emailRegex.test(trimmedEmail)) {
       return NextResponse.json(
         { error: 'Please enter a valid email address.' },
         { status: 400 }
@@ -81,7 +125,7 @@ export async function POST(req) {
     }
 
     // Limit field lengths to prevent abuse
-    if (name.length > 100 || subject?.length > 200 || message.length > 5000) {
+    if (trimmedName.length > 100 || trimmedSubject.length > 200 || trimmedMessage.length > 5000) {
       return NextResponse.json(
         { error: 'Message content is too long.' },
         { status: 400 }
@@ -97,6 +141,15 @@ export async function POST(req) {
       );
     }
 
+    const fromEmail = process.env.CONTACT_FROM_EMAIL || 'LocalPDF Contact <onboarding@resend.dev>';
+    const toEmail = process.env.CONTACT_TO_EMAIL || 'tuyishime1angel@gmail.com';
+    const subjectLine = trimmedSubject || 'New Message';
+
+    const safeName = escapeHtml(trimmedName);
+    const safeEmail = escapeHtml(trimmedEmail);
+    const safeSubject = escapeHtml(subjectLine);
+    const safeMessageHtml = escapeHtml(trimmedMessage).replace(/\r?\n/g, '<br />');
+
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -104,19 +157,19 @@ export async function POST(req) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: 'LocalPDF Contact <onboarding@resend.dev>',
-        to: 'tuyishime1angel@gmail.com',
-        subject: `[LocalPDF Contact] ${subject || 'New Message'}`,
-        reply_to: email,
+        from: fromEmail,
+        to: toEmail,
+        subject: `[LocalPDF Contact] ${subjectLine}`,
+        reply_to: trimmedEmail,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc;">
             <h2 style="color: #ff4757; margin-bottom: 20px;">New Message from LocalPDF</h2>
-            <p><strong>From:</strong> ${name} (&lt;${email}&gt;)</p>
-            <p><strong>Subject:</strong> ${subject}</p>
+            <p><strong>From:</strong> ${safeName} (&lt;${safeEmail}&gt;)</p>
+            <p><strong>Subject:</strong> ${safeSubject}</p>
             <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
             <p><strong>Message:</strong></p>
             <div style="background-color: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; white-space: pre-wrap; line-height: 1.5; color: #334155;">
-              ${message.replace(/\n/g, '<br />')}
+              ${safeMessageHtml}
             </div>
           </div>
         `,

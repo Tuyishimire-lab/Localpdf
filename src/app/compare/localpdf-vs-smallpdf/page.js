@@ -2,12 +2,13 @@ export const dynamic = 'force-static';
 
 import Link from 'next/link';
 import { ArrowLeft, Check, X } from 'lucide-react';
+import { buildPageMetadata } from '../../../lib/seo';
 
-export const metadata = {
+export const metadata = buildPageMetadata({
   title: 'LocalPDF vs Smallpdf – Privacy, Features & Pricing Comparison',
   description: 'Compare LocalPDF and Smallpdf: privacy practices, file upload policies, tool features, pricing tiers, and processing approach.',
-  alternates: { canonical: 'https://www.uselocalpdf.com/compare/localpdf-vs-smallpdf' },
-};
+  path: '/compare/localpdf-vs-smallpdf',
+});
 
 const rows = [
   // Architecture & Privacy
@@ -21,13 +22,15 @@ const rows = [
   { feature: 'Account required', localpdf: false, competitor: 'Optional', note: null },
   { feature: 'Cloud storage integration', localpdf: false, competitor: true, note: 'Drive, Dropbox, OneDrive' },
   // Tools
-  { feature: 'Compress / Merge / Split', localpdf: true, competitor: true, note: 'LocalPDF: instant, no upload' },
-  { feature: 'Sign PDF', localpdf: true, competitor: true, note: null },
-  { feature: 'OCR', localpdf: true, competitor: true, note: 'LocalPDF: offline via Tesseract.js' },
+  { feature: 'Compress / Merge / Split', localpdf: true, competitor: true, note: 'Lossless QPDF WASM + instant' },
+  { feature: 'Batch Multi-PDF ZIP', localpdf: true, competitor: 'Paid plan', note: 'Compress, Watermark, Protect, Rotate, Number' },
+  { feature: 'AES-256 Encryption (WASM)', localpdf: true, competitor: true, note: 'LocalPDF: zero key transmission' },
+  { feature: 'Sign PDF', localpdf: true, competitor: true, note: 'Draw, type, image upload & date stamps' },
+  { feature: 'OCR & Searchable PDF', localpdf: true, competitor: 'Paid plan', note: 'Offline via Tesseract.js' },
   { feature: 'PDF to Word', localpdf: true, competitor: true, note: null },
   { feature: 'Flatten PDF', localpdf: true, competitor: false, note: null },
-  { feature: 'Repair PDF', localpdf: true, competitor: false, note: null },
-  { feature: 'Compare PDF (visual diff)', localpdf: true, competitor: false, note: null },
+  { feature: 'Repair PDF', localpdf: true, competitor: false, note: 'QPDF WASM recovery' },
+  { feature: 'Compare PDF', localpdf: true, competitor: false, note: 'Visual pixel & text diff + report' },
   { feature: 'Processing History', localpdf: true, competitor: 'Account only', note: 'LocalPDF: stored locally' },
 ];
 

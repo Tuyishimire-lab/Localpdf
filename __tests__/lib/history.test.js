@@ -1,12 +1,31 @@
 /**
  * @jest-environment node
  *
- * history.js formatBytes and formatDate are pure functions with no browser
- * dependency — run them in Node to avoid jsdom overhead.
- * addHistoryEntry / getHistory / clearHistory use localStorage and are
- * covered by the E2E tests (they run in a real browser context).
+ * Unit tests for src/lib/history.js
  */
-import { formatBytes, formatDate } from '../../src/lib/history.js';
+import {
+  addHistoryEntry,
+  getHistory,
+  clearHistory,
+  formatBytes,
+  formatDate,
+} from '../../src/lib/history.js';
+
+function makeLocalStorage() {
+  let store = {};
+  return {
+    getItem: (key) => (key in store ? store[key] : null),
+    setItem: (key, value) => {
+      store[key] = String(value);
+    },
+    removeItem: (key) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+  };
+}
 
 describe('history formatBytes', () => {
   test('returns dash for falsy values', () => {
@@ -48,5 +67,52 @@ describe('history formatDate', () => {
   test('handles different dates without throwing', () => {
     expect(() => formatDate('2020-01-01T00:00:00.000Z')).not.toThrow();
     expect(() => formatDate('2030-12-31T23:59:59.999Z')).not.toThrow();
+  });
+});
+
+describe('history localStorage utilities', () => {
+  let mockStorage;
+
+  beforeEach(() => {
+    mockStorage = makeLocalStorage();
+    global.window = {};
+    global.localStorage = mockStorage;
+  });
+
+  afterEach(() => {
+    delete global.window;
+    delete global.localStorage;
+  });
+
+  test('getHistory returns empty array when storage is empty', () => {
+    expect(getHistory()).toEqual([]);
+  });
+
+  test('addHistoryEntry stores an entry and prepends newest first', () => {
+    addHistoryEntry({ tool: 'merge', toolLabel: 'Merge', fileName: 'a.pdf', inputSize: 100, outputSize: 90 });
+    addHistoryEntry({ tool: 'split', toolLabel: 'Split', fileName: 'b.pdf', inputSize: 200, outputSize: 180 });
+    const history = getHistory();
+    expect(history).toHaveLength(2);
+    expect(history[0].tool).toBe('split');
+    expect(history[1].tool).toBe('merge');
+  });
+
+  test('addHistoryEntry caps at MAX_ENTRIES (50)', () => {
+    for (let i = 0; i < 55; i++) {
+      addHistoryEntry({ tool: 'compress', toolLabel: 'Compress', fileName: `file${i}.pdf`, inputSize: i, outputSize: i });
+    }
+    expect(getHistory().length).toBe(50);
+  });
+
+  test('clearHistory empties storage', () => {
+    addHistoryEntry({ tool: 'rotate', toolLabel: 'Rotate', fileName: 'c.pdf', inputSize: 300, outputSize: 300 });
+    expect(getHistory()).toHaveLength(1);
+    clearHistory();
+    expect(getHistory()).toHaveLength(0);
+  });
+
+  test('getHistory returns empty array on malformed JSON', () => {
+    mockStorage.setItem('localpdf_history', 'not-valid-json{{');
+    expect(getHistory()).toEqual([]);
   });
 });

@@ -1,0 +1,66 @@
+# LocalPDF
+
+> Free, open-source, 100% client-side PDF toolkit running entirely inside the user's browser via WebAssembly and JavaScript. Zero file uploads, zero accounts, offline-capable PWA with OS File Handling API, Strict Air-Gapped Mode, 29 standalone PDF tools, and visual Multi-Step PDF Recipes.
+
+Website: https://www.uselocalpdf.com
+Source: https://github.com/Tuyishimire-lab/Localpdf
+Full LLM Reference: https://www.uselocalpdf.com/llms-full.txt
+
+## Core Differentiators
+
+- [PDF Recipes & Multi-Step Pipelines](https://www.uselocalpdf.com/recipes): Chain and save reusable local workflows such as Merge -> Bates Numbering -> Watermark -> Metadata Scrub -> Lossless Compress -> 256-bit AES Protect.
+- [Security & Transparency](https://www.uselocalpdf.com/security): Provable zero-upload WebAssembly architecture, DevTools Network audit guide, and Strict Air-Gapped Mode toggle.
+- [Compare Alternatives](https://www.uselocalpdf.com/compare): Side-by-side privacy, offline, and feature comparisons against cloud PDF tools.
+- [PDF Guides & Blog](https://www.uselocalpdf.com/blog): Step-by-step privacy and PDF workflow tutorials.
+
+## All 29 Local PDF Tools
+
+### Organize & Page Management
+- [Organize PDF](https://www.uselocalpdf.com/tools/organize): Reorder, delete, duplicate, rotate, and insert blank pages visually.
+- [Merge PDF](https://www.uselocalpdf.com/tools/merge): Combine multiple PDFs into a single file in custom order.
+- [Split PDF](https://www.uselocalpdf.com/tools/split): Extract page ranges or split every page into separate files.
+- [Split by Size / Bookmarks](https://www.uselocalpdf.com/tools/split-by-size): Split large PDFs by target MB limit or top-level bookmark outline chapters.
+- [Rotate PDF](https://www.uselocalpdf.com/tools/rotate): Rotate individual pages or entire documents.
+- [Crop PDF](https://www.uselocalpdf.com/tools/crop): Trim margins losslessly via rotation-aware PDF CropBox bounds.
+- [Repair PDF](https://www.uselocalpdf.com/tools/repair): Rebuild damaged cross-reference tables and recover PDFs via QPDF WebAssembly.
+
+### Convert & Extract
+- [PDF to Word](https://www.uselocalpdf.com/tools/pdf-to-word): Convert PDFs into editable `.docx` documents with two-column layout preservation.
+- [Word / TXT to PDF](https://www.uselocalpdf.com/tools/word-to-pdf): Convert `.docx`, `.txt`, and `.md` files to PDF client-side.
+- [PDF to Excel / CSV](https://www.uselocalpdf.com/tools/pdf-to-excel): Extract structured tabular data into `.xlsx` workbooks or `.csv` files locally.
+- [PDF to JPG / PNG](https://www.uselocalpdf.com/tools/pdf-to-jpg): Render PDF pages to high-resolution JPG, PNG, or ZIP archives.
+- [JPG to PDF](https://www.uselocalpdf.com/tools/jpg-to-pdf): Combine JPG, PNG, and WebP images into formatted PDFs.
+- [Extract Images](https://www.uselocalpdf.com/tools/extract-images): Pull embedded photos and raster graphics from PDFs as lossless PNGs or ZIP.
+
+### Edit, Optimize & Forms
+- [Compress PDF](https://www.uselocalpdf.com/tools/compress): Reduce PDF size with QPDF lossless stream optimization or configurable image downsampling.
+- [Edit PDF](https://www.uselocalpdf.com/tools/edit): Add custom text overlays across PDF pages with undo support.
+- [Fill PDF Forms](https://www.uselocalpdf.com/tools/fill-form): Complete interactive AcroForm fields, checkboxes, radio groups, and dropdowns locally.
+- [Sign PDF](https://www.uselocalpdf.com/tools/sign): Draw, type, date-stamp, or upload signatures across single or multiple pages.
+- [Watermark PDF](https://www.uselocalpdf.com/tools/watermark): Stamp text or image watermarks including diagonal tiling and batch ZIP export.
+- [Page Numbers](https://www.uselocalpdf.com/tools/page-numbers): Insert customizable page numbering across PDFs.
+- [Bates Numbering](https://www.uselocalpdf.com/tools/bates-numbering): Apply continuous legal Bates prefixes, zero-padded IDs, and custom headers/footers.
+- [Grayscale PDF](https://www.uselocalpdf.com/tools/grayscale): Convert color PDFs to monochrome BT.709 grayscale for printing.
+- [Flatten PDF](https://www.uselocalpdf.com/tools/flatten): Convert interactive form fields and annotations into static page content via pdf-lib and QPDF WASM.
+
+### Privacy, Security & Verification
+- [Protect PDF](https://www.uselocalpdf.com/tools/protect): Encrypt PDFs locally with 256-bit AES user/owner passwords and granular permissions via QPDF WebAssembly.
+- [Unlock PDF](https://www.uselocalpdf.com/tools/unlock): Decrypt password-protected PDFs or remove owner restrictions locally via QPDF WebAssembly.
+- [Redact & Sanitize](https://www.uselocalpdf.com/tools/redact): Permanently rasterize/black out sensitive regions and strip metadata.
+- [Metadata Editor & Scrubber](https://www.uselocalpdf.com/tools/metadata): Inspect, edit, or strip Title, Author, Subject, Creator, Producer, and timestamps.
+- [Compare PDF](https://www.uselocalpdf.com/tools/compare): Side-by-side pixel and line-level text diff with downloadable HTML diff reports.
+
+### AI & OCR
+- [AI PDF Summarizer & Chat](https://www.uselocalpdf.com/tools/ai-chat): Local TF-IDF extractive QA, auto-OCR fallback for scans, category & topic detection, Markdown/PDF export, plus opt-in On-Device Browser LLM (`LanguageModel` / WebGPU synthesis).
+- [OCR PDF](https://www.uselocalpdf.com/tools/ocr): Optical character recognition powered by self-hosted Tesseract.js v7 with searchable invisible-text PDF export.
+
+## Comparisons & Info Pages
+
+- [LocalPDF vs iLovePDF](https://www.uselocalpdf.com/compare/localpdf-vs-ilovepdf)
+- [LocalPDF vs Smallpdf](https://www.uselocalpdf.com/compare/localpdf-vs-smallpdf)
+- [LocalPDF vs PDF24](https://www.uselocalpdf.com/compare/localpdf-vs-pdf24)
+- [About LocalPDF](https://www.uselocalpdf.com/about)
+- [Privacy Policy](https://www.uselocalpdf.com/privacy)
+- [Terms of Service](https://www.uselocalpdf.com/terms)
+- [Contact](https://www.uselocalpdf.com/contact)
+

@@ -1,0 +1,53 @@
+---
+title: "How to Automate Multi-Step PDF Workflows With Offline PDF Recipes"
+description: "Stop uploading documents repeatedly to single-purpose web tools. Learn how to build, reorder, and save reusable multi-step local PDF pipelines offline in your browser."
+date: "2026-08-25"
+readTime: "6 min"
+category: "Productivity"
+---
+
+Preparing a real-world PDF deliverable rarely ends after one click. Consider what preparing a client contract packet, litigation binder, or board deck actually takes:
+
+1. Merge four separate PDFs into a single packet.
+2. Trim excessive white scanner margins or add sequential Bates numbers.
+3. Stamp a `CONFIDENTIAL` diagonal watermark.
+4. Scrub internal author and software metadata.
+5. Compress the output for email without blurring vector text.
+6. Lock the final PDF with a 256-bit AES open password.
+
+Performing those six tasks manually across different websites wastes valuable time. Worse, on traditional cloud PDF sites, it forces you to upload and re-download confidential documents six separate times across third-party servers.
+
+[LocalPDF PDF Recipes](/recipes) replaces manual tool-hopping with visual multi-step pipelines that execute strictly in your browser's local memory in one click.
+
+## Built-In Local Workflow Presets
+
+You can start immediately with three pre-configured recipes designed around common professional workflows:
+
+- **Legal Discovery Pack:** `Merge PDFs -> Bates Numbering -> Scrub Metadata -> Lossless Compress (QPDF)`
+- **Confidential Client Share:** `Watermark Text ("CONFIDENTIAL") -> Scrub Metadata -> Lossless Compress (QPDF) -> Encrypt PDF (AES-256)`
+- **Clean Archive Prep:** `Crop Margins (18pt) -> Page Numbers -> Flatten Forms & Annotations -> Lossless Compress (QPDF)`
+
+Each step exposes inline configuration controls inside the pipeline stack, letting you customize prefixes, watermark text, crop margins, page numbering formats, and encryption passwords before pressing **Run Pipeline**.
+
+## All 9 Composable Pipeline Steps & Recommended Order
+
+When building custom workflows, ordering steps correctly ensures clean formatting and maximum security:
+
+| Pipeline Order | Step Type | Best Used For |
+|---|---|---|
+| **1 (Early)** | **Merge PDFs** | Combining multiple dropped PDFs before page-level numbering |
+| **2 (Early)** | **Crop Margins** | Trimming white scanner borders via lossless PDF CropBox settings |
+| **3 (Middle)** | **Bates Numbering / Page Numbers** | Stamping sequential IDs or `Page {n} of {total}` once page order is final |
+| **4 (Middle)** | **Watermark Text** | Adding centered or diagonal tiled text overlays (`CONFIDENTIAL`, `DRAFT`) |
+| **5 (Late)** | **Flatten Forms & Annotations** | Converting fillable AcroForms and annotations into static ink |
+| **6 (Late)** | **Scrub Metadata** | Wiping author names, titles, software versions, and timestamps |
+| **7 (Late)** | **Lossless Compress (QPDF)** | Optimizing object streams and linearizing for fast loading |
+| **8 (Last)** | **Encrypt PDF (AES-256)** | Locking the finished deliverable with a 256-bit AES open password |
+
+Placing **Encrypt PDF** last is important because encrypted streams cannot be modified downstream without unlocking first.
+
+## Saving & Reusing Custom Recipes Offline
+
+Whenever you assemble a custom combination of steps (for instance, `Merge -> Crop Margins -> Page Numbers -> Scrub Metadata -> Compress` for monthly investor packets), enter a name and click **Save**. Your custom workflow is stored strictly in your own browser under `localpdf_recipes` so it remains available offline on future visits without an account.
+
+For single tasks that benefit from a live interactive page canvas, such as placing drawn e-signatures or choosing exact redaction boxes visually, use dedicated tools like [Sign PDF](/tools/sign), [Redact & Sanitize](/tools/redact), [Bates Numbering](/tools/bates-numbering), or [Protect PDF](/tools/protect), then chain outputs directly from the completion dialog.

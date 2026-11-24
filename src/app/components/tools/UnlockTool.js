@@ -6,9 +6,9 @@ import Workspace from '../Workspace';
 import ProgressModal from '../ProgressModal';
 import PagePreview from '../PagePreview';
 import { loadPdf } from '../../../lib/pdfEngine';
+import { decryptPdf, verifyPdfPassword } from '../../../lib/qpdfEngine';
 import { downloadFile } from '../../../lib/utils';
-import { PDFDocument } from 'pdf-lib';
-import * as pdfjsLib from 'pdfjs-dist';
+import { toast } from '../../../context/ToastContext';
 
 export default function UnlockTool() {
   const [files, setFiles] = useState([]);
@@ -42,7 +42,7 @@ export default function UnlockTool() {
         setIsLocked(true);
         setTotalPages(0);
       } else {
-        alert("Failed to load PDF file. The file may be corrupt.");
+        toast.error("Failed to load PDF file. The file may be corrupt.");
         setFiles([]);
       }
     }
@@ -60,24 +60,26 @@ export default function UnlockTool() {
 
   const handleTestPassword = async () => {
     if (!password) {
-      alert("Please enter a password.");
+      toast.error("Please enter a password.");
       return;
     }
 
     try {
       const fileBytes = await files[0].arrayBuffer();
-      const doc = await PDFDocument.load(fileBytes, { password: password });
-      
-      const arrayBuffer = await files[0].arrayBuffer();
-      const pdfjsDoc = await pdfjsLib.getDocument({ data: arrayBuffer, password: password }).promise;
-      
+      const { valid } = await verifyPdfPassword(fileBytes, password);
+      if (!valid) {
+        toast.error("Incorrect password. Please try again.");
+        return;
+      }
+
+      const pdfjsDoc = await loadPdf(files[0], password);
       setPdfDoc(pdfjsDoc);
       setTotalPages(pdfjsDoc.numPages);
       setDecryptSuccess(true);
-      alert("Password verified! Previews loaded.");
+      toast.success("Password verified! Previews loaded.");
     } catch (err) {
       console.error("Verification error:", err);
-      alert("Incorrect password. Please try again.");
+      toast.error("Incorrect password. Please try again.");
     }
   };
 
@@ -88,26 +90,14 @@ export default function UnlockTool() {
 
     try {
       const fileBytes = await files[0].arrayBuffer();
-      let srcPdf;
-      
-      if (isLocked) {
-        srcPdf = await PDFDocument.load(fileBytes, { password: password });
-      } else {
-        srcPdf = await PDFDocument.load(fileBytes, { ignoreEncryption: true });
-      }
+      const unlockedBytes = await decryptPdf(fileBytes, isLocked ? password : '');
+      const blob = new Blob([unlockedBytes], { type: 'application/pdf' });
 
-      const targetPdf = await PDFDocument.create();
-      const copiedPages = await targetPdf.copyPages(srcPdf, srcPdf.getPageIndices());
-      copiedPages.forEach((page) => targetPdf.addPage(page));
-
-      const pdfBytes = await targetPdf.save();
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      
       setProcessedBlob(blob);
       setProcessing(false);
     } catch (err) {
       console.error("Decryption error:", err);
-      alert("Failed to unlock PDF. Ensure the password is correct.");
+      toast.error(err?.message || "Failed to unlock PDF. Ensure the password is correct.");
       setModalOpen(false);
       setProcessing(false);
     }
@@ -115,7 +105,7 @@ export default function UnlockTool() {
 
   const handleDownload = () => {
     if (!processedBlob) return;
-    const name = files[0].name.replace('.pdf', '');
+    const name = files[0].name.replace(/\.pdf$/i, '');
     downloadFile(processedBlob, `${name}_unlocked.pdf`);
   };
 

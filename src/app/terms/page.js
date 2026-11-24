@@ -1,9 +1,12 @@
 export const dynamic = 'force-static';
 
-export const metadata = {
+import { buildPageMetadata } from '../../lib/seo';
+
+export const metadata = buildPageMetadata({
   title: 'Terms of Service | LocalPDF',
   description: 'Terms of Service for LocalPDF. Review our terms of use for client-side PDF document manipulation tools.',
-};
+  path: '/terms',
+});
 
 export default function TermsPage() {
   return (

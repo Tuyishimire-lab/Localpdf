@@ -5,6 +5,33 @@ import { Wrench, CheckCircle, Loader, Info } from 'lucide-react';
 import Workspace from '../Workspace';
 import ProgressModal from '../ProgressModal';
 import { downloadFile } from '../../../lib/utils';
+import { repairPdfStructure } from '../../../lib/qpdfEngine';
+import { toast } from '../../../context/ToastContext';
+
+const PDF_HEADER = [0x25, 0x50, 0x44, 0x46, 0x2D]; // %PDF-
+const PDF_EOF = [0x25, 0x25, 0x45, 0x4F, 0x46];    // %%EOF
+
+function findBytesIndex(haystack, needle, fromEnd = false) {
+  if (haystack.length < needle.length) return -1;
+  if (fromEnd) {
+    for (let i = haystack.length - needle.length; i >= 0; i--) {
+      let match = true;
+      for (let j = 0; j < needle.length; j++) {
+        if (haystack[i + j] !== needle[j]) { match = false; break; }
+      }
+      if (match) return i;
+    }
+    return -1;
+  }
+  for (let i = 0; i <= haystack.length - needle.length; i++) {
+    let match = true;
+    for (let j = 0; j < needle.length; j++) {
+      if (haystack[i + j] !== needle[j]) { match = false; break; }
+    }
+    if (match) return i;
+  }
+  return -1;
+}
 
 export default function RepairTool() {
   const [files, setFiles] = useState([]);
@@ -40,41 +67,68 @@ export default function RepairTool() {
       addLog('Reading file...');
       const arrayBuffer = await files[0].arrayBuffer();
 
-      addLog('Attempting to parse PDF structure...');
-      const { PDFDocument } = await import('pdf-lib');
-
-      let pdfDoc;
+      let repairedBytes = null;
+      addLog('Running QPDF WebAssembly structural repair & xref reconstruction...');
       try {
-        pdfDoc = await PDFDocument.load(arrayBuffer, {
-          ignoreEncryption: true,
-          throwOnInvalidObject: false,
-          updateMetadata: false,
-        });
-        addLog('PDF structure parsed successfully.');
-      } catch {
-        addLog('Primary parse failed. Attempting recovery...');
+        const qpdfResult = await repairPdfStructure(arrayBuffer);
+        repairedBytes = qpdfResult.bytes;
+        if (qpdfResult.logs && qpdfResult.logs.length > 0) {
+          qpdfResult.logs.slice(0, 6).forEach((line) => addLog(`QPDF: ${line}`));
+        }
+        addLog('QPDF structural repair succeeded.');
+      } catch (qpdfErr) {
+        addLog(`QPDF repair fallback triggered (${qpdfErr?.message || 'parse error'}).`);
+        addLog('Attempting outer stream recovery with pdf-lib...');
+        const { PDFDocument } = await import('pdf-lib');
+
+        let pdfDoc;
         try {
-          const partialData = new Uint8Array(arrayBuffer).slice(0, -100);
-          pdfDoc = await PDFDocument.load(partialData.buffer, {
+          pdfDoc = await PDFDocument.load(arrayBuffer, {
             ignoreEncryption: true,
             throwOnInvalidObject: false,
+            updateMetadata: false,
           });
-          addLog('Partial recovery succeeded.');
+          addLog('PDF structure parsed with pdf-lib.');
         } catch {
-          throw new Error('PDF is too corrupted to recover. The file structure cannot be parsed.');
+          const rawBytes = new Uint8Array(arrayBuffer);
+          const headerIdx = findBytesIndex(rawBytes, PDF_HEADER, false);
+          const eofIdx = findBytesIndex(rawBytes, PDF_EOF, true);
+
+          if (headerIdx === -1) {
+            throw new Error('No %PDF- header found. The file may not be a valid PDF or is severely corrupted.');
+          }
+
+          const endIdx = eofIdx > headerIdx ? eofIdx + PDF_EOF.length : rawBytes.length;
+          const trimmedBytes = rawBytes.slice(headerIdx, endIdx);
+
+          try {
+            pdfDoc = await PDFDocument.load(trimmedBytes, {
+              ignoreEncryption: true,
+              throwOnInvalidObject: false,
+              updateMetadata: false,
+            });
+            addLog('Recovered PDF structure after trimming outer stream noise.');
+          } catch {
+            throw new Error('PDF is too corrupted to recover. Full xref reconstruction failed.');
+          }
         }
+
+        addLog(`Found ${pdfDoc.getPageCount()} pages.`);
+        addLog('Rebuilding cross-reference table...');
+        repairedBytes = await pdfDoc.save({
+          addDefaultPage: pdfDoc.getPageCount() === 0,
+          useObjectStreams: false,
+        });
       }
 
-      addLog(`Found ${pdfDoc.getPageCount()} pages.`);
-      addLog('Rebuilding cross-reference table...');
-
-      const repairedBytes = await pdfDoc.save({
-        addDefaultPage: pdfDoc.getPageCount() === 0,
-        useObjectStreams: false,
-      });
-
-      addLog('Verifying repaired PDF...');
-      await PDFDocument.load(repairedBytes);
+      addLog('Verifying repaired PDF header...');
+      const hasValidHeader =
+        repairedBytes &&
+        repairedBytes.byteLength > PDF_HEADER.length &&
+        PDF_HEADER.every((b, idx) => repairedBytes[idx] === b);
+      if (!hasValidHeader) {
+        throw new Error('Generated PDF failed header validation.');
+      }
       addLog('Verification passed. Repair complete!');
 
       const blob = new Blob([repairedBytes], { type: 'application/pdf' });
@@ -86,7 +140,7 @@ export default function RepairTool() {
       console.error(err);
       setProcessing(false);
       setModalOpen(false);
-      alert(err.message || 'Repair failed. The file may have severe structural damage beyond recovery.');
+      toast.error(err.message || 'Repair failed. The file may have severe structural damage beyond recovery.');
     }
   };
 

@@ -5,6 +5,9 @@ import { Layers, Info } from 'lucide-react';
 import Workspace from '../Workspace';
 import ProgressModal from '../ProgressModal';
 import { downloadFile } from '../../../lib/utils';
+import { loadPdfLibSafely } from '../../../lib/pdfGuard';
+import { flattenPdfAnnotations } from '../../../lib/qpdfEngine';
+import { toast } from '../../../context/ToastContext';
 
 export default function FlattenTool() {
   const [files, setFiles] = useState([]);
@@ -33,51 +36,24 @@ export default function FlattenTool() {
     setResultBlob(null);
 
     try {
-      const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
       const arrayBuffer = await files[0].arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+      const pdfDoc = await loadPdfLibSafely(arrayBuffer);
 
       const form = pdfDoc.getForm();
       const fields = form.getFields();
-      let fieldsFlattened = 0;
+      const fieldsFlattened = fields.length;
 
-      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-      for (const field of fields) {
+      if (fieldsFlattened > 0) {
         try {
-          const fieldType = field.constructor.name;
-          if (fieldType === 'PDFTextField') {
-            const value = field.getText() || '';
-            const widgets = field.acroField.getWidgets();
-            for (const widget of widgets) {
-              const rect = widget.getRectangle();
-              const pageRef = widget.P();
-              if (!pageRef || !value) continue;
-              const pages = pdfDoc.getPages();
-              for (const page of pages) {
-                if (page.ref === pageRef) {
-                  page.drawText(value, {
-                    x: rect.x + 2,
-                    y: rect.y + 2,
-                    size: 10,
-                    font,
-                    color: rgb(0, 0, 0),
-                    maxWidth: rect.width - 4,
-                  });
-                  break;
-                }
-              }
-            }
-          }
-          fieldsFlattened++;
+          form.updateFieldAppearances();
         } catch {
-          // skip individual field errors
+          // ignore appearance generation errors for custom fonts
         }
+        form.flatten();
       }
 
-      form.flatten();
-
-      const flatBytes = await pdfDoc.save();
+      const formFlattenedBytes = await pdfDoc.save();
+      const { bytes: flatBytes } = await flattenPdfAnnotations(formFlattenedBytes);
       const blob = new Blob([flatBytes], { type: 'application/pdf' });
       const name = files[0].name.replace(/\.pdf$/i, '_flattened.pdf');
 
@@ -89,7 +65,7 @@ export default function FlattenTool() {
       console.error(err);
       setProcessing(false);
       setModalOpen(false);
-      alert('Failed to flatten the PDF. It may be password-protected or corrupted.');
+      toast.error(err?.message || 'Failed to flatten the PDF. It may be password-protected or corrupted.');
     }
   };
 

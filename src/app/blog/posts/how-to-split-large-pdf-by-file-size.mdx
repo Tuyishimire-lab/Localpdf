@@ -1,0 +1,45 @@
+---
+title: "How to Split Large PDFs by File Size (Under 10MB or 25MB for Email)"
+description: "Understand why email servers reject 20MB PDFs due to MIME Base64 overhead, when to split by MB limit vs bookmark chapters, and how to chunk oversized PDFs offline."
+date: "2026-08-24"
+readTime: "6 min"
+category: "Guide"
+---
+
+Few workflow bottlenecks are more frustrating than finishing a crisp, print-ready PDF report only to hit an upload wall: *"Attachment exceeds maximum size limit."*
+
+In many cases, standard compression isn't an acceptable trade-off. If you aggressively downsample architectural drawings, scanned receipts, or medical imaging to squeeze under a 10 MB limit, fine print and diagrams can turn blurry. The clean alternative is keeping original visual quality intact and dividing the document into guaranteed size-compliant volumes.
+
+With [LocalPDF Split by Size / Bookmarks](/tools/split-by-size), you can split any large PDF cleanly into parts sized below an exact MB ceiling or split automatically along embedded bookmark chapters, all inside browser memory.
+
+## Why a "20 MB" PDF Still Fails a 25 MB Email Limit
+
+When a portal or email client advertises a 25 MB limit, users are often surprised when a 21 MB PDF bounces. The culprit is **MIME Base64 encoding**:
+
+Email protocols transmit binary attachments by encoding them into plain ASCII text. Base64 expansion adds roughly **33% size overhead**, plus email headers and HTML body content. As a result, a **20 MB PDF** actually consumes around **26.6 MB** in transit, exceeding a 25 MB gateway limit.
+
+| Destination / Portal | Stated Limit | Recommended Safe PDF Target |
+|---|---|---|
+| **Corporate Microsoft Exchange / Office 365** | Often 10 MB - 20 MB | **7 MB** (or **14 MB** if 20 MB confirmed) |
+| **Gmail & Yahoo Mail** | 25 MB | **18 MB** |
+| **Apple Mail / iCloud** | 20 MB (without Mail Drop) | **14 MB** |
+| **Government, Legal & Court E-Filing Portals** | Commonly 5 MB - 10 MB | **4 MB** or **8 MB** |
+| **WhatsApp / Messaging Sharing** | High cap, slow mobile links | **10 MB - 15 MB** for fast download |
+
+## Two Splitting Modes in LocalPDF
+
+### 1. Split by Target File Size (MB)
+Specify your maximum volume size (for example `4 MB`, `8 MB`, or `18 MB`). LocalPDF builds chunks sequentially by measuring actual serialized `pdf-lib` byte weights as pages are packed into each part, rather than guessing by dividing total size by page count. That accuracy matters because a 50-page PDF might have 45 light text pages and 5 heavy full-bleed scanned blueprints. Every exported part (`Part 1`, `Part 2`, and so on) is packaged together in a single local `.zip` download.
+
+*(Note: if one single page itself weighs more than your chosen ceiling, LocalPDF safely places that page in its own single-page volume and notifies you so no pages are ever dropped.)*
+
+### 2. Split by Bookmark Chapters
+Technical manuals, ebooks, financial annual reports, and court briefs frequently include an embedded PDF Outline (Table of Contents bookmarks). Switching to **Bookmark Chapters** mode inspects top-level outline destinations via Mozilla `pdfjs-dist` and cuts cleanly at every chapter boundary, naming each file after its chapter title.
+
+## Choosing the Best Tool for Undersized Attachments
+
+Depending on your deliverable requirements, pair splitting with other local tools:
+
+- **Need one single smaller file instead of multiple parts?** Run [Compress PDF](/tools/compress) using QPDF lossless stream optimization or moderate image downsampling (see our [Email PDF Compression Guide](/blog/how-to-compress-pdf-for-email)).
+- **Sending documents meant solely for black-and-white laser printing?** Convert full-color pages to calibrated monochrome in [Grayscale PDF](/tools/grayscale) to save toner and reduce file weight.
+- **Only need 3 specific pages out of a 100-page report?** Use [Split PDF](/tools/split) or visually remove unneeded appendix pages in [Organize PDF](/tools/organize).

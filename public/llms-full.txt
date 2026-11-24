@@ -1,0 +1,69 @@
+# LocalPDF — Full Technical & Product Reference for LLMs
+
+> LocalPDF (`https://www.uselocalpdf.com`) is an open-source, 100% browser-based PDF suite built with Next.js 16, React 19, and WebAssembly. Every document operation executes strictly in client-side browser memory with zero server uploads, zero accounts, and full offline PWA support.
+
+## Architecture & Security Guarantees
+
+1. **Zero-Upload Processing:** Uploaded or dropped files are read into in-browser `ArrayBuffer` / `Uint8Array` memory and mutated locally. No PDF bytes, passwords, OCR images, form inputs, or metadata leave the user's device.
+2. **Core Client-Side Engines:**
+   - **QPDF WebAssembly (`@neslinesli93/qpdf-wasm`):** Runs inside an isolated Web Worker for **256-bit AES** PDF encryption (`/tools/protect`), decryption & restriction removal (`/tools/unlock`), lossless stream compression (`/tools/compress`), structural repair (`/tools/repair`), and annotation flattening (`/tools/flatten`).
+   - **`pdf-lib` & `@pdf-lib/fontkit`:** Client-side PDF assembly, page splitting/merging, rotation-aware CropBox margin trimming, Bates numbering, watermarks, form filling, metadata scrubbing, and searchable OCR text-layer embedding.
+   - **Mozilla `pdfjs-dist`:** Self-hosted worker (`/pdf/pdf.worker.min.mjs`) rendering sandboxed page previews, extracting native text streams, detecting embedded raster images, and parsing document bookmark outlines.
+   - **Tesseract.js v7:** Self-hosted worker/core binaries and bundled English traineddata (`/tesseract/lang-data/eng.traineddata.gz`) for offline optical character recognition.
+   - **`docx` & `jszip`:** In-browser OOXML Word generation (`/tools/pdf-to-word`), multi-file batch `.zip` downloads, and SpreadsheetML `.xlsx` / `.csv` workbook generation (`/tools/pdf-to-excel`).
+   - **`Fabric.js`:** Interactive canvas drawing and placement for e-signatures (`/tools/sign`) and text annotations (`/tools/edit`).
+3. **Strict Air-Gapped Mode (`localpdf_airgapped`):**
+   - Toggled from the interactive privacy verification badge in any tool workspace.
+   - Forcefully disables optional analytics scripts (Vercel Analytics / Google Analytics) even if cookies were accepted, and blocks non-local OCR language pack CDN requests so OCR runs strictly offline using the bundled English model.
+4. **PWA & OS File Handling API:**
+   - Offline-capable Progressive Web App (`public/sw.js`) precaching the app shell, `qpdf.wasm`, PDF.js worker, and English OCR assets.
+   - Declares `file_handlers` in `public/manifest.json` for `application/pdf` (`.pdf`) and consumes `window.launchQueue` handles so desktop PWA users can open `.pdf` files directly from their OS file manager.
+5. **Opt-In Local AI Engine (`/tools/ai-chat`):**
+   - Defaults to instant zero-download TF-IDF semantic retrieval + extractive Q&A, automatic OCR fallback for scanned pages, whole-word category detection (`legal`, `medical`, `finance`, `academic`, `sales`, `technical`, `resume`, `general`), and topic-aware suggested prompts.
+   - Supports opt-in **On-Device AI** mode using Chrome/Edge's built-in `LanguageModel` Prompt API (`window.LanguageModel` / `window.ai.languageModel`) when available or structured local synthesis with hardware WebGPU capability detection—never downloading external model weights or calling remote LLM APIs.
+6. **Multi-Step PDF Recipes (`/recipes`):**
+   - Visual workflow pipeline builder executing chained in-memory passes across `merge`, `crop`, `bates`, `watermark`, `page-numbers`, `metadata-scrub`, `flatten`, `compress` (QPDF), and `protect` (256-bit AES).
+   - Built-in presets: **Legal Discovery Pack**, **Confidential Client Share**, and **Clean Archive Prep**, plus local saving/reordering via `localpdf_recipes`.
+
+## Complete Tool Directory (29 Tools + PDF Recipes)
+
+1. `GET /recipes` — Visual Multi-Step PDF Recipes & Pipelines builder
+2. `GET /tools/organize` — Visual page reorder, delete, duplicate, rotate, and blank page insert
+3. `GET /tools/merge` — Combine multiple PDFs in custom order
+4. `GET /tools/split` — Extract specific page ranges or split all pages
+5. `GET /tools/split-by-size` — Chunk PDFs into target MB size limits or split by top-level bookmark chapters
+6. `GET /tools/compress` — QPDF lossless structural optimization & lossy image downsampling (single & batch ZIP)
+7. `GET /tools/edit` — Interactive canvas text overlays & undo stack
+8. `GET /tools/ocr` — Scanned PDF OCR to `.txt` or searchable PDF with invisible OCR text layer
+9. `GET /tools/pdf-to-jpg` — Export pages to JPG, PNG, or ZIP archive
+10. `GET /tools/jpg-to-pdf` — Convert JPG, PNG, and WebP images to PDF
+11. `GET /tools/sign` — Draw, type, image-upload, date-stamp, and multi-page e-sign
+12. `GET /tools/rotate` — Rotate pages (individual or batch ZIP)
+13. `GET /tools/watermark` — Text/image watermarks with opacity, rotation, diagonal tiling, and batch ZIP
+14. `GET /tools/page-numbers` — Custom page numbering formats & alignment
+15. `GET /tools/protect` — **256-bit AES** encryption and permission locking via QPDF WASM
+16. `GET /tools/unlock` — Remove user/owner passwords via QPDF WASM
+17. `GET /tools/redact` — Permanent visual black-out redaction & metadata sanitization
+18. `GET /tools/ai-chat` — Local PDF Summarizer & Q&A Chat with page citations, Markdown/PDF export, and On-Device AI option
+19. `GET /tools/word-to-pdf` — Client-side `.docx`, `.txt`, and `.md` to PDF conversion
+20. `GET /tools/pdf-to-word` — PDF to editable `.docx` with multi-column reconstruction
+21. `GET /tools/flatten` — Flatten AcroForms and annotations into static content
+22. `GET /tools/compare` — Pixel + line-level text diff across two PDFs with HTML report export
+23. `GET /tools/repair` — QPDF WASM xref table and stream recovery
+24. `GET /tools/pdf-to-excel` — Local table extraction to `.xlsx` or `.csv`
+25. `GET /tools/crop` — Rotation-aware lossless CropBox margin trimming
+26. `GET /tools/extract-images` — Extract embedded raster images to PNGs or ZIP
+27. `GET /tools/fill-form` — Interactive AcroForm filler with optional flattening
+28. `GET /tools/metadata` — Inspect, edit, or completely scrub identifying PDF metadata
+29. `GET /tools/bates-numbering` — Legal Bates stamping and `{page}` / `{total}` headers & footers
+30. `GET /tools/grayscale` — Calibrated BT.709 black-and-white print-ready PDF conversion
+
+## Local Browser Storage Keys (100% Client-Side)
+
+- `localpdf_theme`: Light or dark UI theme (`light` | `dark`)
+- `localpdf_history`: Recent local tool activity log (file names, sizes, timestamps; never transmitted)
+- `localpdf-cookie-consent`: Optional analytics consent choice (`accepted` | `declined`)
+- `localpdf-pwa-prompt-dismissed`: Offline install prompt dismissal state
+- `localpdf_airgapped`: Strict Air-Gapped Mode state (`true` | `false`)
+- `localpdf_recipes`: Custom multi-step PDF Recipes saved locally by the user
+

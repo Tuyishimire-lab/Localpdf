@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Download, X, Smartphone } from 'lucide-react';
+import { CONSENT_STORAGE_KEY, CONSENT_EVENT } from './CookieConsent';
 
 const DISMISSED_KEY = 'localpdf-pwa-prompt-dismissed';
 const DELAY_MS = 45_000; // show after 45 seconds
@@ -9,32 +10,51 @@ const DELAY_MS = 45_000; // show after 45 seconds
 /**
  * PWAInstallPrompt — a non-intrusive toast that invites users to install
  * LocalPDF as a PWA (Progressive Web App).
- *
- * - Waits 45 seconds before appearing (user should have used the app first)
- * - Remembers dismissal in localStorage so it doesn't reappear
- * - Only shows when the browser fires 'beforeinstallprompt' (i.e. the app
- *   is actually installable — Chrome/Edge on Android/Windows)
- * - Does nothing on iOS Safari (which uses its own Add to Home Screen flow)
  */
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [visible, setVisible] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const timerRef = useRef(null);
 
   useEffect(() => {
-    // Don't show if user already dismissed
-    if (typeof window !== 'undefined' && localStorage.getItem(DISMISSED_KEY)) return;
+    if (typeof window === 'undefined' || localStorage.getItem(DISMISSED_KEY)) return;
 
-    const handler = (e) => {
-      e.preventDefault(); // stop the browser's default mini-infobar
-      setDeferredPrompt(e);
-
-      // Wait a bit before showing — let the user actually use the app first
-      setTimeout(() => setVisible(true), DELAY_MS);
+    const scheduleVisible = () => {
+      if (timerRef.current) return;
+      timerRef.current = setTimeout(() => {
+        // Avoid overlapping CookieConsent if still unanswered
+        if (localStorage.getItem(CONSENT_STORAGE_KEY)) {
+          setVisible(true);
+        }
+      }, DELAY_MS);
     };
 
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      if (localStorage.getItem(CONSENT_STORAGE_KEY)) {
+        scheduleVisible();
+      }
+    };
+
+    const handleConsentResolved = () => {
+      if (localStorage.getItem(CONSENT_STORAGE_KEY)) {
+        scheduleVisible();
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener(CONSENT_EVENT, handleConsentResolved);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener(CONSENT_EVENT, handleConsentResolved);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -54,7 +74,7 @@ export default function PWAInstallPrompt() {
     localStorage.setItem(DISMISSED_KEY, '1');
   };
 
-  if (!visible) return null;
+  if (!visible || !deferredPrompt) return null;
 
   return (
     <div className="pwa-prompt" role="dialog" aria-label="Install LocalPDF app">

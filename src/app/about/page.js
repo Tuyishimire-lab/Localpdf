@@ -2,12 +2,13 @@ export const dynamic = 'force-static';
 
 import Link from 'next/link';
 import { ShieldCheck, Code2, ExternalLink, User, MapPin, Mail } from 'lucide-react';
+import { buildPageMetadata } from '../../lib/seo';
 
-export const metadata = {
+export const metadata = buildPageMetadata({
   title: 'About Us | LocalPDF',
   description: 'Learn how LocalPDF operates 100% locally in your web browser using WebAssembly. Read about our mission, open source codebase, and maintainer.',
-  alternates: { canonical: 'https://www.uselocalpdf.com/about' },
-};
+  path: '/about',
+});
 
 export default function AboutPage() {
   return (
@@ -25,7 +26,7 @@ export default function AboutPage() {
           Most online PDF converters and editors force you to upload your files to remote cloud servers. If you are handling documents with sensitive information like tax forms, legal agreements, financial statements, contracts, or personal medical records, server-based processing introduces unacceptable security risks.
         </p>
         <p>
-          Our mission is to eliminate that risk entirely. LocalPDF provides a comprehensive set of 21 standard PDF utilities that run <strong>entirely inside your browser</strong>. Your documents never upload to a backend server.
+          Our mission is to eliminate that risk entirely. LocalPDF provides 29 specialized PDF utilities plus visual Multi-Step PDF Recipes that run <strong>entirely inside your browser</strong>. Your documents never upload to a backend server.
         </p>
 
         <h2>How It Works (100% Client-Side)</h2>

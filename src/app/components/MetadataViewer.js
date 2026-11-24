@@ -45,7 +45,8 @@ export default function MetadataViewer({ file }) {
           producer: pdfDoc.getProducer() || 'Unknown',
           creationDate: parsePdfDate(pdfDoc.getCreationDate()?.toString()),
           modificationDate: parsePdfDate(pdfDoc.getModificationDate()?.toString()),
-          pageCount: pdfDoc.getPageCount()
+          pageCount: pdfDoc.getPageCount(),
+          isEncrypted: pdfDoc.isEncrypted
         });
         setLoading(false);
       } catch (err) {
@@ -113,6 +114,7 @@ export default function MetadataViewer({ file }) {
               <strong>Author:</strong> <span style={{ color: 'var(--text-main)' }}>{metadata.author}</span>
               <strong>Subject:</strong> <span style={{ color: 'var(--text-main)' }}>{metadata.subject}</span>
               <strong>Pages:</strong> <span style={{ color: 'var(--text-main)' }}>{metadata.pageCount}</span>
+              <strong>Security:</strong> <span style={{ color: metadata.isEncrypted ? 'var(--error-color)' : 'var(--success-color)' }}>{metadata.isEncrypted ? 'Encrypted / Protected' : 'Unencrypted'}</span>
               <strong>Creator:</strong> <span style={{ color: 'var(--text-main)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{metadata.creator}</span>
               <strong>Producer:</strong> <span style={{ color: 'var(--text-main)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{metadata.producer}</span>
               <strong>Created:</strong> <span style={{ color: 'var(--text-main)' }}>{metadata.creationDate}</span>

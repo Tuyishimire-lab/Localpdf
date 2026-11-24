@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { EyeOff, ShieldCheck, Trash2, Search, ChevronLeft, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
+import { EyeOff, ShieldCheck, Trash2, Search, ChevronLeft, ChevronRight, Loader2, AlertCircle, Undo2 } from 'lucide-react';
 import Workspace from '../Workspace';
 import ProgressModal from '../ProgressModal';
 import { loadPdf } from '../../../lib/pdfEngine';
 import { downloadFile } from '../../../lib/utils';
+import { toast } from '../../../context/ToastContext';
 import { addHistoryEntry } from '../../../lib/history';
 import { PDFDocument } from 'pdf-lib';
 
@@ -19,6 +20,7 @@ export default function RedactTool() {
 
   // Redaction state: pageNum (1-based) => array of boxes [{ id, x, y, width, height }] (percentages)
   const [redactions, setRedactions] = useState({});
+  const [undoStack, setUndoStack] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPos, setStartPos] = useState(null);
   const [currentBox, setCurrentBox] = useState(null);
@@ -45,6 +47,7 @@ export default function RedactTool() {
 
     setFiles([targetFile]);
     setRedactions({});
+    setUndoStack([]);
     setCurrentPage(1);
     setSearchKeyword('');
     setSearchFeedback('');
@@ -60,7 +63,7 @@ export default function RedactTool() {
       setTotalPages(doc.numPages);
     } catch (err) {
       console.error('Error loading PDF', err);
-      alert('Failed to load PDF file.');
+      toast.error('Failed to load PDF file.');
       setFiles([]);
     } finally {
       setIsLoadingPdf(false);
@@ -74,6 +77,7 @@ export default function RedactTool() {
     setTotalPages(0);
     setCurrentPage(1);
     setRedactions({});
+    setUndoStack([]);
     setSearchKeyword('');
     setSearchFeedback('');
     setProcessedBlob(null);
@@ -150,6 +154,37 @@ export default function RedactTool() {
     setCurrentBox({ x, y, width, height });
   };
 
+  const commitRedactions = useCallback((nextMap) => {
+    setRedactions((prev) => {
+      setUndoStack((stack) => [...stack.slice(-24), prev]);
+      return nextMap;
+    });
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    setUndoStack((stack) => {
+      if (stack.length === 0) return stack;
+      const previous = stack[stack.length - 1];
+      setRedactions(previous);
+      return stack.slice(0, -1);
+    });
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        if (undoStack.length > 0) {
+          e.preventDefault();
+          handleUndo();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [undoStack.length, handleUndo]);
+
   const handleMouseUp = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
@@ -157,7 +192,7 @@ export default function RedactTool() {
     if (currentBox && currentBox.width > 0.8 && currentBox.height > 0.8) {
       const pageBoxes = redactions[currentPage] || [];
       const newBox = { ...currentBox, id: Date.now() + Math.random() };
-      setRedactions({
+      commitRedactions({
         ...redactions,
         [currentPage]: [...pageBoxes, newBox],
       });
@@ -168,14 +203,14 @@ export default function RedactTool() {
 
   const removeRedactionBox = (pageNum, id) => {
     const pageBoxes = redactions[pageNum] || [];
-    setRedactions({
+    commitRedactions({
       ...redactions,
       [pageNum]: pageBoxes.filter((b) => b.id !== id),
     });
   };
 
   const clearPageRedactions = () => {
-    setRedactions({
+    commitRedactions({
       ...redactions,
       [currentPage]: [],
     });
@@ -272,7 +307,7 @@ export default function RedactTool() {
         newRedactions[i] = pageBoxes;
       }
 
-      setRedactions(newRedactions);
+      commitRedactions(newRedactions);
       if (matchCount > 0) {
         setSearchFeedback(`Found & redacted ${matchCount} match(es) for "${searchKeyword}".`);
       } else if (totalTextItemsDoc === 0) {
@@ -309,7 +344,6 @@ export default function RedactTool() {
     setProcessedBlob(null);
 
     try {
-      const srcDoc = await PDFDocument.load(pdfArrayBuffer, { ignoreEncryption: true });
       const outDoc = await PDFDocument.create();
 
       if (sanitizeMetadata) {
@@ -377,7 +411,7 @@ export default function RedactTool() {
       });
     } catch (err) {
       console.error('Redaction failed:', err);
-      alert('Failed to redact and sanitize PDF: ' + err.message);
+      toast.error('Failed to redact and sanitize PDF: ' + err.message);
       setModalOpen(false);
     } finally {
       setProcessing(false);
@@ -432,14 +466,27 @@ export default function RedactTool() {
               Click & drag on page to blackout text
             </div>
 
-            <button
-              className="btn-secondary"
-              onClick={clearPageRedactions}
-              disabled={currentRedactions.length === 0}
-              style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}
-            >
-              <Trash2 size={13} style={{ marginRight: '0.3rem' }} /> Clear Page
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleUndo}
+                disabled={undoStack.length === 0}
+                title="Undo (Ctrl/Cmd+Z)"
+                style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}
+              >
+                <Undo2 size={13} style={{ marginRight: '0.25rem' }} aria-hidden="true" /> Undo
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={clearPageRedactions}
+                disabled={currentRedactions.length === 0}
+                style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}
+              >
+                <Trash2 size={13} style={{ marginRight: '0.3rem' }} /> Clear Page
+              </button>
+            </div>
           </div>
 
           {/* Interactive Page Canvas with Redaction Overlay */}
@@ -621,6 +668,7 @@ export default function RedactTool() {
         resultBlob={processedBlob}
         resultFileName="redacted_sanitized.pdf"
         currentToolId="redact"
+        skipHistory={true}
       />
     </Workspace>
   );
